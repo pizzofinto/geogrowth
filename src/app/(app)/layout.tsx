@@ -1,48 +1,41 @@
-'use client'; // Questo layout ora gestisce uno stato, quindi deve essere un Client Component
-
-import * as React from 'react';
-import { Header } from '@/components/layout/header';
-import { Sidebar } from '@/components/layout/sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
+import { Separator } from '@/components/ui/separator';
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 
 export default function AppShellLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // 1. Aggiungiamo lo stato per gestire la sidebar
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
-
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
-  };
-
   return (
+    // 1. Il Provider di Autenticazione avvolge tutto
     <AuthProvider>
-      {/* 2. Applichiamo le classi dinamicamente in base allo stato */}
-      <div
-        className={cn(
-          'grid min-h-screen w-full transition-[grid-template-columns]',
-          isCollapsed
-            ? 'md:grid-cols-[56px_1fr]'
-            : 'md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]'
-        )}
-      >
-        {/* 3. Passiamo lo stato e la funzione ai componenti figli */}
-        <Sidebar isCollapsed={isCollapsed} />
-        <div className="flex flex-col overflow-hidden">
-          <Header toggleSidebar={toggleSidebar} isCollapsed={isCollapsed} />
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-6">
+      {/* 2. Il SidebarProvider gestisce lo stato compresso/espanso */}
+      <SidebarProvider>
+        {/* 3. La nostra nuova AppSidebar viene renderizzata qui */}
+        <AppSidebar />
+        {/* 4. SidebarInset contiene tutto il resto della pagina */}
+        <SidebarInset>
+          <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-[orientation=vertical]:h-4"
+            />
+            <Breadcrumbs />
+          </header>
+          {/* 5. Il contenuto specifico della pagina viene renderizzato qui */}
+          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
             {children}
-          </main>
-        </div>
-      </div>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     </AuthProvider>
   );
 }
-// Questo file definisce il layout principale dell'applicazione, che include un sidebar e un header.
-// Il layout utilizza il contesto di autenticazione per fornire informazioni sull'utente e
-// i suoi ruoli a tutti i componenti figli. Il layout è responsabile della struttura
-// della pagina, gestendo la disposizione del sidebar e dell'header, e applicando stili dinamici
-// in base allo stato della sidebar (espansa o compressa).

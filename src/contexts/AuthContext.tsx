@@ -4,53 +4,64 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 
-// Definiamo il tipo di dati che il nostro context conterrà
+// Definiamo un tipo più ricco per il nostro utente, che includa il nome completo
+// preso dalla nostra tabella 'users'
+export interface UserProfile extends User {
+  full_name?: string;
+  avatar_url?: string;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: UserProfile | null;
   roles: string[];
   isLoading: boolean;
 }
 
-// Creiamo il Context con un valore di default
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Creiamo il componente Provider
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // La funzione onAuthStateChange restituisce un oggetto { data: { subscription } }
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const authUser = session?.user ?? null;
 
-        if (currentUser) {
-          // Se l'utente è loggato, recuperiamo i suoi ruoli
-          const { data, error } = await supabase
-            .from('user_role_assignments')
-            .select('user_roles(role_name)')
-            .eq('user_id', currentUser.id);
+      if (authUser) {
+        // 1. Se l'utente è loggato, recuperiamo il suo profilo dalla tabella 'users'
+        const { data: profile } = await supabase
+          .from('users')
+          .select('full_name')
+          .eq('id', authUser.id)
+          .single();
 
-          if (error) {
-            console.error('Error fetching user roles:', error);
-            setRoles([]);
-          } else {
-            // Estraiamo i nomi dei ruoli dall'array di oggetti
-            const userRoles = data.map(item => item.user_roles.role_name);
-            setRoles(userRoles);
-          }
-        } else {
-          // Se l'utente non è loggato, svuotiamo i ruoli
-          setRoles([]);
-        }
-        setIsLoading(false);
+        // 2. Recuperiamo i ruoli come prima
+        const { data: rolesData } = await supabase
+          .from('user_role_assignments')
+          .select('user_roles(role_name)')
+          .eq('user_id', authUser.id);
+        
+        const userRoles = rolesData?.map((item) => item.user_roles.role_name) ?? [];
+        
+        // 3. Creiamo un oggetto utente "arricchito" con il nome completo
+        const userWithProfile: UserProfile = {
+          ...authUser,
+          full_name: profile?.full_name,
+        };
+
+        setUser(userWithProfile);
+        setRoles(userRoles);
+
+      } else {
+        setUser(null);
+        setRoles([]);
       }
-    );
+      setIsLoading(false);
+    });
 
-    // La funzione di pulizia ora chiama unsubscribe sull'oggetto 'subscription'
     return () => {
       subscription?.unsubscribe();
     };
@@ -65,7 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// Creiamo un custom hook per usare facilmente il nostro context
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
