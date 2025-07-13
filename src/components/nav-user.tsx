@@ -37,8 +37,14 @@ export function NavUser() {
   const router = useRouter();
 
   const handleLogout = async () => {
+    // 1. Esegue il logout da Supabase
     await supabase.auth.signOut();
-    router.refresh();
+    
+    // 2. Forza un aggiornamento completo dello stato dell'app
+    // Questo comando è la chiave per risolvere il problema
+    router.refresh(); 
+
+    // 3. Reindirizza alla homepage (ora l'app saprà con certezza che sei disconnesso)
     router.push('/');
   };
 
@@ -189,8 +195,7 @@ export function NavUser() {
                 <CreditCard className="mr-2 h-4 w-4" />
                 <span>Billing</span>
               </DropdownMenuItem>
-              Uncomment this section f
-              or future usage*/}
+              */}
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
