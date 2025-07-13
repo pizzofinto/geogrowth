@@ -19,7 +19,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabaseClient';
 
-// Define the validation schema with Zod
 const formSchema = z.object({
   email: z.string().email({
     message: 'Please enter a valid email address.',
@@ -34,7 +33,6 @@ interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
   const router = useRouter();
 
-  // Configure the form with React Hook Form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -43,18 +41,41 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
     },
   });
 
-  // Define the submission function
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
-    });
+    // 1. Esegui il login
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
 
-    if (error) {
-      alert('Login Error: ' + error.message);
-    } else {
-      // alert('Login successful!'); remove comment tag for debug purpose 
-      router.push('/dashboard');
+    if (signInError) {
+      alert('Login Error: ' + signInError.message);
+      return; // Interrompi se il login fallisce
+    }
+
+    if (signInData.user) {
+      // 2. Se il login ha successo, recupera i ruoli dell'utente
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_role_assignments')
+        .select('user_roles(role_name)')
+        .eq('user_id', signInData.user.id);
+
+      if (roleError) {
+        console.error('Error fetching user roles:', roleError);
+        // In caso di errore nel recupero dei ruoli, reindirizza a una dashboard generica
+        router.push('/dashboard');
+        return;
+      }
+
+      const roles = roleData.map((item) => item.user_roles.role_name);
+
+      // 3. Reindirizza in base al ruolo
+      if (roles.includes('Super User')) {
+        router.push('/admin');
+      } else {
+        router.push('/project-selection');
+      }
     }
   }
 
@@ -103,9 +124,6 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
           <Button type="submit" className="w-full">
             Login
           </Button>
-          {/* <Button variant="outline" className="w-full">
-            Login with Google
-          </Button> <-- OPTIONAL: FOR FUTURE IMPLEMENTATION REMOVE THE COMMENT TAG*/}
         </form>
       </Form>
     </div>
