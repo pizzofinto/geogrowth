@@ -30,12 +30,11 @@ export default function ProjectSelectionPage() {
     async function fetchProjects() {
       if (!user) return;
       
-      const { data, error } = await supabase
-        .from('projects')
-        .select('id, project_name, project_code, project_status');
+      // Chiama la funzione RPC per ottenere i dati arricchiti
+      const { data, error } = await supabase.rpc('get_projects_with_details');
 
       if (error) {
-        console.error('Error fetching projects:', error);
+        console.error('Error fetching project details:', error);
       } else {
         setAllProjects(data || []);
       }
@@ -47,6 +46,7 @@ export default function ProjectSelectionPage() {
     }
   }, [user, authLoading]);
 
+  // useEffect per i filtri rimane invariato
   useEffect(() => {
     let projects = allProjects;
 
@@ -71,39 +71,34 @@ export default function ProjectSelectionPage() {
 
   return (
     <div className="flex flex-col h-full w-full">
-      {/* Titolo della pagina */}
-      <div className="mb-4">
-        <h1 className="text-3xl font-bold">Projects</h1>
-      </div>
-
-      {/* Barra dei controlli (Ricerca, Filtro e Pulsante) */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <Input
-            placeholder="Search by name or code..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-          />
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Statuses</SelectItem>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Archived">Archived</SelectItem>
-              <SelectItem value="Closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <h1 className="text-3xl font-bold">Projects</h1>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
           Create New Project
         </Button>
       </div>
+
+      <div className="flex items-center gap-4 mb-4">
+        <Input
+          placeholder="Search by name or code..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All Statuses</SelectItem>
+            <SelectItem value="Active">Active</SelectItem>
+            <SelectItem value="Archived">Archived</SelectItem>
+            <SelectItem value="Closed">Closed</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       
-      {/* Tabella dei dati */}
       <DataTable columns={columns} data={filteredProjects} />
     </div>
   );

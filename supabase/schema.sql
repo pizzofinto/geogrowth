@@ -386,6 +386,61 @@ COMMENT ON FUNCTION "public"."cleanup_orphaned_data"() IS 'Removes orphaned cavi
 
 
 
+CREATE OR REPLACE FUNCTION "public"."get_projects_with_details"() RETURNS TABLE("id" bigint, "project_name" "text", "project_code" "text", "project_status" "public"."project_status_enum", "otop_percentage" numeric, "ot_percentage" numeric, "total_components" bigint, "next_milestone_name" "text", "next_milestone_date" "date")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        p.id,
+        p.project_name,
+        p.project_code,
+        p.project_status,
+        -- Calcola la percentuale OTOP con una sotto-query corretta
+        COALESCE((
+            SELECT (COUNT(*) FILTER (WHERE pc.calculated_parent_status = 'OTOP') * 100.0) / COUNT(*)
+            FROM parent_components pc
+            WHERE pc.project_id = p.id
+        ), 0)::NUMERIC(5, 2) AS otop_percentage,
+        -- Calcola la percentuale OT con una sotto-query corretta
+        COALESCE((
+            SELECT (COUNT(*) FILTER (WHERE pc.calculated_parent_status = 'OT') * 100.0) / COUNT(*)
+            FROM parent_components pc
+            WHERE pc.project_id = p.id
+        ), 0)::NUMERIC(5, 2) AS ot_percentage,
+        -- Calcola il totale dei componenti
+        (
+            SELECT COUNT(*) FROM parent_components pc WHERE pc.project_id = p.id
+        ) AS total_components,
+        -- Trova la prossima milestone
+        (
+            SELECT md.milestone_name
+            FROM project_milestone_instances pmi
+            JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
+            WHERE pmi.project_id = p.id
+              AND pmi.milestone_status <> 'Completed'
+              AND pmi.milestone_target_date >= CURRENT_DATE
+            ORDER BY pmi.milestone_target_date ASC
+            LIMIT 1
+        ) AS next_milestone_name,
+        (
+            SELECT pmi.milestone_target_date
+            FROM project_milestone_instances pmi
+            WHERE pmi.project_id = p.id
+              AND pmi.milestone_status <> 'Completed'
+              AND pmi.milestone_target_date >= CURRENT_DATE
+            ORDER BY pmi.milestone_target_date ASC
+            LIMIT 1
+        ) AS next_milestone_date
+    FROM
+        projects p;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_projects_with_details"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."has_role"("role_to_check" "text") RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -2706,6 +2761,12 @@ GRANT ALL ON FUNCTION "public"."cleanup_old_notifications"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."cleanup_orphaned_data"() TO "anon";
 GRANT ALL ON FUNCTION "public"."cleanup_orphaned_data"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."cleanup_orphaned_data"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_projects_with_details"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_projects_with_details"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_projects_with_details"() TO "service_role";
 
 
 
