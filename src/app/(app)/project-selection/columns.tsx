@@ -3,20 +3,13 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
+import { ArrowUpDown, FilePenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
-import { Progress } from '@/components/ui/progress';
+import { StackedProgressBar } from './stacked-progress-bar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-// 1. Aggiorniamo il tipo di dati per includere i nuovi campi
+// Il tipo di dati del progetto rimane lo stesso
 export type Project = {
   id: number;
   project_name: string;
@@ -24,6 +17,7 @@ export type Project = {
   project_status: 'Active' | 'Archived' | 'Closed';
   otop_percentage: number | null;
   ot_percentage: number | null;
+  ko_percentage: number | null;
   total_components: number | null;
   next_milestone_name: string | null;
   next_milestone_date: string | null;
@@ -77,38 +71,45 @@ export const columns: ColumnDef<Project>[] = [
       return <Badge variant={status === 'Active' ? 'default' : 'secondary'}>{status}</Badge>;
     },
   },
-  // Colonna % OTOP
-  {
-    accessorKey: 'otop_percentage',
-    header: '% OTOP',
-    cell: ({ row }) => {
-      const percentage = row.original.otop_percentage;
-      return (
-        <div className="flex items-center gap-2">
-          <Progress value={percentage ?? 0} className="w-24" />
-          <span className="text-sm text-muted-foreground">{`${percentage ?? 0}%`}</span>
-        </div>
-      );
-    },
-  },
-  // 2. NUOVA COLONNA: % OT
-  {
-    accessorKey: 'ot_percentage',
-    header: '% OT',
-    cell: ({ row }) => {
-      const percentage = row.original.ot_percentage;
-      return (
-        <div className="flex items-center gap-2">
-          <Progress value={percentage ?? 0} className="w-24" />
-          <span className="text-sm text-muted-foreground">{`${percentage ?? 0}%`}</span>
-        </div>
-      );
-    },
-  },
-  // 3. NUOVA COLONNA: Total Components
+  // Colonna: Conteggio Componenti (modificata)
   {
     accessorKey: 'total_components',
-    header: 'Total Comp.',
+    header: 'Components',
+    cell: ({ row }) => {
+      const total = row.original.total_components ?? 0;
+      return (
+        // Contenitore modificato per centrare il contenuto con flexbox
+        <div className="flex justify-center">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="default">{total}</Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Total components in this project</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      );
+    },
+  },
+  // Colonna: Maturity Index
+  {
+    id: 'maturity_index',
+    header: 'Maturity Index',
+    cell: ({ row }) => {
+      const project = row.original;
+      return (
+        <div className="w-32">
+          <StackedProgressBar
+            otop={project.otop_percentage ?? 0}
+            ot={project.ot_percentage ?? 0}
+            ko={project.ko_percentage ?? 0}
+          />
+        </div>
+      );
+    },
   },
   // Colonna Next Milestone
   {
@@ -132,29 +133,27 @@ export const columns: ColumnDef<Project>[] = [
       );
     },
   },
-  // Colonna per le azioni
+  // Colonna: Actions
   {
     id: 'actions',
+    header: 'Actions',
     cell: ({ row }) => {
-      const project = row.original;
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(project.id.toString())}>
-              Copy project ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View project details</DropdownMenuItem>
-            <DropdownMenuItem>Edit project</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Link href={`/projects/${row.original.id}/edit`}>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Edit project</span>
+                            <FilePenLine className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Edit Project</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
       );
     },
   },

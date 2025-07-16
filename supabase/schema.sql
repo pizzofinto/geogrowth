@@ -386,7 +386,7 @@ COMMENT ON FUNCTION "public"."cleanup_orphaned_data"() IS 'Removes orphaned cavi
 
 
 
-CREATE OR REPLACE FUNCTION "public"."get_projects_with_details"() RETURNS TABLE("id" bigint, "project_name" "text", "project_code" "text", "project_status" "public"."project_status_enum", "otop_percentage" numeric, "ot_percentage" numeric, "total_components" bigint, "next_milestone_name" "text", "next_milestone_date" "date")
+CREATE OR REPLACE FUNCTION "public"."get_projects_with_details"() RETURNS TABLE("id" bigint, "project_name" "text", "project_code" "text", "project_status" "public"."project_status_enum", "otop_percentage" numeric, "ot_percentage" numeric, "ko_percentage" numeric, "total_components" bigint, "next_milestone_name" "text", "next_milestone_date" "date")
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
 BEGIN
@@ -396,18 +396,24 @@ BEGIN
         p.project_name,
         p.project_code,
         p.project_status,
-        -- Calcola la percentuale OTOP con una sotto-query corretta
+        -- Calcola la percentuale OTOP
         COALESCE((
-            SELECT (COUNT(*) FILTER (WHERE pc.calculated_parent_status = 'OTOP') * 100.0) / COUNT(*)
+            SELECT (COUNT(*) FILTER (WHERE pc.calculated_parent_status = 'OTOP') * 100.0) / NULLIF(COUNT(pc.id), 0)
             FROM parent_components pc
             WHERE pc.project_id = p.id
         ), 0)::NUMERIC(5, 2) AS otop_percentage,
-        -- Calcola la percentuale OT con una sotto-query corretta
+        -- Calcola la percentuale OT
         COALESCE((
-            SELECT (COUNT(*) FILTER (WHERE pc.calculated_parent_status = 'OT') * 100.0) / COUNT(*)
+            SELECT (COUNT(*) FILTER (WHERE pc.calculated_parent_status = 'OT') * 100.0) / NULLIF(COUNT(pc.id), 0)
             FROM parent_components pc
             WHERE pc.project_id = p.id
         ), 0)::NUMERIC(5, 2) AS ot_percentage,
+        -- Calcola la nuova percentuale KO
+        COALESCE((
+            SELECT (COUNT(*) FILTER (WHERE pc.calculated_parent_status = 'KO') * 100.0) / NULLIF(COUNT(pc.id), 0)
+            FROM parent_components pc
+            WHERE pc.project_id = p.id
+        ), 0)::NUMERIC(5, 2) AS ko_percentage,
         -- Calcola il totale dei componenti
         (
             SELECT COUNT(*) FROM parent_components pc WHERE pc.project_id = p.id
