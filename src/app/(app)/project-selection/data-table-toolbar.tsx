@@ -22,6 +22,7 @@ import { PlusCircle, Trash2, FileUp, Settings2 } from 'lucide-react';
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
+  roles: string[]; // Aggiunta la prop per i ruoli
   statusFilter: string;
   setStatusFilter: (value: string) => void;
   searchTerm: string;
@@ -30,6 +31,7 @@ interface DataTableToolbarProps<TData> {
 
 export function DataTableToolbar<TData>({
   table,
+  roles, // Riceve i ruoli
   statusFilter,
   setStatusFilter,
   searchTerm,
@@ -37,17 +39,25 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const numSelected = table.getFilteredSelectedRowModel().rows.length;
 
+  // Definiamo i permessi in base ai ruoli
+  const canCreateProject = roles.includes('Super User') || roles.includes('Supplier Quality') || roles.includes('Engineering');
+  const canDeleteProject = roles.includes('Super User'); // Solo il Super User può cancellare
+
   return (
     <>
-      {/* Titolo della pagina, separato dalla toolbar */}
-      <div className="mb-4">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Projects</h1>
+        {/* Mostra il pulsante solo se l'utente ha i permessi */}
+        {canCreateProject && (
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create New Project
+          </Button>
+        )}
       </div>
 
-      {/* Barra degli strumenti unificata */}
       <div className="flex items-center justify-between mb-4">
-        {/* Controlli a sinistra: Azioni, Ricerca, Filtro */}
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-1 items-center space-x-2">
           {numSelected > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -66,11 +76,16 @@ export function DataTableToolbar<TData>({
                   <FileUp className="mr-2 h-4 w-4" />
                   Export Selected
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Selected
-                </DropdownMenuItem>
+                {/* Mostra l'opzione di cancellazione solo se l'utente ha i permessi */}
+                {canDeleteProject && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Selected
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
@@ -92,12 +107,6 @@ export function DataTableToolbar<TData>({
             </SelectContent>
           </Select>
         </div>
-        
-        {/* Pulsante a destra */}
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Create New Project
-        </Button>
       </div>
     </>
   );

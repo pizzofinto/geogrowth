@@ -37,15 +37,10 @@ export function NavUser() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    // 1. Esegue il logout da Supabase
     await supabase.auth.signOut();
-    
-    // 2. Forza un aggiornamento completo dello stato dell'app
-    // Questo comando è la chiave per risolvere il problema
-    router.refresh(); 
-
-    // 3. Reindirizza alla homepage (ora l'app saprà con certezza che sei disconnesso)
-    router.push('/');
+    // Usa un reindirizzamento completo per garantire la pulizia dello stato.
+    // Questa è la soluzione più robusta per evitare problemi di sincronizzazione.
+    window.location.assign('/');
   };
 
   if (isLoading) {

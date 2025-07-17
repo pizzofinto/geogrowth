@@ -7,7 +7,7 @@ import { columns, Project } from './columns';
 import { DataTable } from './data-table';
 
 export default function ProjectSelectionPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, roles, isLoading: authLoading } = useAuth();
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,8 +19,29 @@ export default function ProjectSelectionPage() {
 
     async function fetchProjects() {
       if (!user) return;
+
+      let projectQuery;
+
+      if (roles.includes('Super User') || roles.includes('Supplier Quality') || roles.includes('Engineering')) {
+        projectQuery = supabase.rpc('get_projects_with_details');
+      } else {
+        const { data: assignments, error: assignmentsError } = await supabase
+          .from('user_project_assignments')
+          .select('project_id')
+          .eq('user_id', user.id);
+
+        if (assignmentsError || !assignments || assignments.length === 0) {
+          if(assignmentsError) console.error('Error fetching assignments:', assignmentsError);
+          setAllProjects([]);
+          setLoading(false);
+          return;
+        }
+        
+        const projectIds = assignments.map((a) => a.project_id);
+        projectQuery = supabase.rpc('get_projects_with_details').in('id', projectIds);
+      }
       
-      const { data, error } = await supabase.rpc('get_projects_with_details');
+      const { data, error } = await projectQuery;
 
       if (error) {
         console.error('Error fetching project details:', error);
@@ -33,7 +54,7 @@ export default function ProjectSelectionPage() {
     if (!authLoading && user) {
       fetchProjects();
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, roles]);
 
   useEffect(() => {
     let projects = allProjects;
@@ -59,10 +80,10 @@ export default function ProjectSelectionPage() {
 
   return (
     <div className="flex flex-col h-full w-full">
-      {/* La barra degli strumenti è stata rimossa da qui e ora è gestita da DataTable */}
       <DataTable 
         columns={columns} 
         data={filteredProjects}
+        roles={roles} // Passa i ruoli al componente DataTable
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         searchTerm={searchTerm}

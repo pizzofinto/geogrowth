@@ -8,7 +8,7 @@ import {
   getSortedRowModel,
   SortingState,
   useReactTable,
-  getPaginationRowModel, // Importa per la paginazione
+  getPaginationRowModel,
   RowSelectionState,
 } from '@tanstack/react-table';
 
@@ -21,12 +21,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { DataTableToolbar } from './data-table-toolbar'; // Importa la nuova toolbar
+import { DataTableToolbar } from './data-table-toolbar';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  // Passiamo i props per la toolbar
+  roles: string[];
   statusFilter: string;
   setStatusFilter: (value: string) => void;
   searchTerm: string;
@@ -36,12 +36,15 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
   columns,
   data,
+  roles,
   statusFilter,
   setStatusFilter,
   searchTerm,
   setSearchTerm,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>([
+    { id: 'next_milestone_date', desc: false },
+  ]);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
 
   const table = useReactTable({
@@ -62,6 +65,7 @@ export function DataTable<TData, TValue>({
     <div>
       <DataTableToolbar
         table={table}
+        roles={roles}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         searchTerm={searchTerm}
@@ -111,7 +115,6 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      {/* Controlli di paginazione */}
       <div className="flex items-center justify-end space-x-2 py-4">
         <Button
           variant="outline"
