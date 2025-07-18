@@ -76,7 +76,8 @@ CREATE TYPE "public"."milestone_status_enum" AS ENUM (
     'In Progress',
     'Completed',
     'Delayed',
-    'Skipped'
+    'Skipped',
+    'Cancelled'
 );
 
 
@@ -384,6 +385,68 @@ ALTER FUNCTION "public"."cleanup_orphaned_data"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."cleanup_orphaned_data"() IS 'Removes orphaned cavity evaluations and SPC values.';
 
+
+
+CREATE OR REPLACE FUNCTION "public"."get_global_dashboard_stats"() RETURNS json
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    result json;
+BEGIN
+    WITH 
+    active_projects AS (
+        SELECT COUNT(*) as count FROM projects WHERE project_status = 'Active'
+    ),
+    risk_projects AS (
+        SELECT COUNT(DISTINCT p.id) as count
+        FROM projects p
+        WHERE p.project_status = 'Active'
+          AND EXISTS (
+            SELECT 1 FROM parent_components pc
+            JOIN action_plans ap ON pc.id = ap.parent_component_id
+            WHERE pc.project_id = p.id
+              AND ap.due_date < CURRENT_DATE
+              AND ap.action_plan_status NOT IN ('Completed', 'Verified', 'Cancelled')
+          )
+    ),
+    upcoming_deadlines AS (
+        SELECT COUNT(*) as count
+        FROM project_milestone_instances
+        WHERE milestone_status NOT IN ('Completed', 'Cancelled')
+          AND milestone_target_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+    ),
+    next_milestones AS (
+        SELECT COALESCE(json_agg(t ORDER BY t.milestone_target_date ASC), '[]'::json) as milestones
+        FROM (
+            SELECT p.project_name, md.milestone_name, pmi.milestone_target_date
+            FROM project_milestone_instances pmi
+            JOIN projects p ON pmi.project_id = p.id
+            JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
+            WHERE pmi.milestone_status NOT IN ('Completed', 'Cancelled')
+              AND pmi.milestone_target_date >= CURRENT_DATE
+              AND p.project_status = 'Active'
+            ORDER BY pmi.milestone_target_date ASC
+            LIMIT 5
+        ) t
+    )
+    SELECT json_build_object(
+        'active_projects', ap.count,
+        'projects_at_risk', rp.count,
+        'upcoming_deadlines', ud.count,
+        'next_milestones', nm.milestones
+    ) INTO result
+    FROM active_projects ap
+    CROSS JOIN risk_projects rp
+    CROSS JOIN upcoming_deadlines ud
+    CROSS JOIN next_milestones nm;
+
+    RETURN result;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_global_dashboard_stats"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_projects_with_details"() RETURNS TABLE("id" bigint, "project_name" "text", "project_code" "text", "project_status" "public"."project_status_enum", "otop_percentage" numeric, "ot_percentage" numeric, "ko_percentage" numeric, "total_components" bigint, "overdue_action_plans_count" bigint, "next_milestone_name" "text", "next_milestone_date" "date")
@@ -2773,6 +2836,12 @@ GRANT ALL ON FUNCTION "public"."cleanup_old_notifications"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."cleanup_orphaned_data"() TO "anon";
 GRANT ALL ON FUNCTION "public"."cleanup_orphaned_data"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."cleanup_orphaned_data"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_global_dashboard_stats"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_global_dashboard_stats"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_global_dashboard_stats"() TO "service_role";
 
 
 
