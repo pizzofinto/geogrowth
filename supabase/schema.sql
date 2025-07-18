@@ -386,60 +386,66 @@ COMMENT ON FUNCTION "public"."cleanup_orphaned_data"() IS 'Removes orphaned cavi
 
 
 
-CREATE OR REPLACE FUNCTION "public"."get_projects_with_details"() RETURNS TABLE("id" bigint, "project_name" "text", "project_code" "text", "project_status" "public"."project_status_enum", "otop_percentage" numeric, "ot_percentage" numeric, "ko_percentage" numeric, "total_components" bigint, "next_milestone_name" "text", "next_milestone_date" "date")
+CREATE OR REPLACE FUNCTION "public"."get_projects_with_details"() RETURNS TABLE("id" bigint, "project_name" "text", "project_code" "text", "project_status" "public"."project_status_enum", "otop_percentage" numeric, "ot_percentage" numeric, "ko_percentage" numeric, "total_components" bigint, "overdue_action_plans_count" bigint, "next_milestone_name" "text", "next_milestone_date" "date")
     LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
     RETURN QUERY
+    WITH 
+    -- CTE ottimizzata per calcolare tutte le statistiche dei componenti in un unico passaggio
+    component_stats AS (
+        SELECT
+            p.id AS project_id,
+            COUNT(pc.id) AS total,
+            COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'OTOP') AS otop,
+            COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'OT') AS ot,
+            COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'KO') AS ko
+        FROM projects p
+        LEFT JOIN parent_components pc ON p.id = pc.project_id
+        GROUP BY p.id
+    ),
+    -- CTE per i piani d'azione scaduti
+    overdue_plans AS (
+        SELECT
+            pc.project_id,
+            COUNT(ap.id) as overdue_count
+        FROM action_plans ap
+        JOIN parent_components pc ON ap.parent_component_id = pc.id
+        WHERE
+            ap.due_date < CURRENT_DATE
+            AND ap.action_plan_status NOT IN ('Completed', 'Verified', 'Cancelled')
+        GROUP BY pc.project_id
+    ),
+    -- CTE per la prossima milestone
+    next_milestones AS (
+        SELECT
+            pmi.project_id,
+            md.milestone_name,
+            pmi.milestone_target_date,
+            ROW_NUMBER() OVER(PARTITION BY pmi.project_id ORDER BY pmi.milestone_target_date ASC) as rn
+        FROM project_milestone_instances pmi
+        JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
+        WHERE pmi.milestone_status <> 'Completed' AND pmi.milestone_target_date >= CURRENT_DATE
+    )
+    -- Select finale che unisce i dati pre-calcolati
     SELECT
         p.id,
         p.project_name,
         p.project_code,
         p.project_status,
-        -- Calcola la percentuale OTOP
-        COALESCE((
-            SELECT (COUNT(*) FILTER (WHERE pc.calculated_parent_status = 'OTOP') * 100.0) / NULLIF(COUNT(pc.id), 0)
-            FROM parent_components pc
-            WHERE pc.project_id = p.id
-        ), 0)::NUMERIC(5, 2) AS otop_percentage,
-        -- Calcola la percentuale OT
-        COALESCE((
-            SELECT (COUNT(*) FILTER (WHERE pc.calculated_parent_status = 'OT') * 100.0) / NULLIF(COUNT(pc.id), 0)
-            FROM parent_components pc
-            WHERE pc.project_id = p.id
-        ), 0)::NUMERIC(5, 2) AS ot_percentage,
-        -- Calcola la nuova percentuale KO
-        COALESCE((
-            SELECT (COUNT(*) FILTER (WHERE pc.calculated_parent_status = 'KO') * 100.0) / NULLIF(COUNT(pc.id), 0)
-            FROM parent_components pc
-            WHERE pc.project_id = p.id
-        ), 0)::NUMERIC(5, 2) AS ko_percentage,
-        -- Calcola il totale dei componenti
-        (
-            SELECT COUNT(*) FROM parent_components pc WHERE pc.project_id = p.id
-        ) AS total_components,
-        -- Trova la prossima milestone
-        (
-            SELECT md.milestone_name
-            FROM project_milestone_instances pmi
-            JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
-            WHERE pmi.project_id = p.id
-              AND pmi.milestone_status <> 'Completed'
-              AND pmi.milestone_target_date >= CURRENT_DATE
-            ORDER BY pmi.milestone_target_date ASC
-            LIMIT 1
-        ) AS next_milestone_name,
-        (
-            SELECT pmi.milestone_target_date
-            FROM project_milestone_instances pmi
-            WHERE pmi.project_id = p.id
-              AND pmi.milestone_status <> 'Completed'
-              AND pmi.milestone_target_date >= CURRENT_DATE
-            ORDER BY pmi.milestone_target_date ASC
-            LIMIT 1
-        ) AS next_milestone_date
+        COALESCE((cs.otop * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS otop_percentage,
+        COALESCE((cs.ot * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS ot_percentage,
+        COALESCE((cs.ko * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS ko_percentage,
+        COALESCE(cs.total, 0) AS total_components,
+        COALESCE(op.overdue_count, 0) AS overdue_action_plans_count,
+        nm.milestone_name AS next_milestone_name,
+        nm.milestone_target_date AS next_milestone_date
     FROM
-        projects p;
+        projects p
+    LEFT JOIN component_stats cs ON p.id = cs.project_id
+    LEFT JOIN overdue_plans op ON p.id = op.project_id
+    LEFT JOIN next_milestones nm ON p.id = nm.project_id AND nm.rn = 1;
 END;
 $$;
 
