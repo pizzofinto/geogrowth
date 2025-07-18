@@ -19,29 +19,8 @@ export default function ProjectSelectionPage() {
 
     async function fetchProjects() {
       if (!user) return;
-
-      let projectQuery;
-
-      if (roles.includes('Super User') || roles.includes('Supplier Quality') || roles.includes('Engineering')) {
-        projectQuery = supabase.rpc('get_projects_with_details');
-      } else {
-        const { data: assignments, error: assignmentsError } = await supabase
-          .from('user_project_assignments')
-          .select('project_id')
-          .eq('user_id', user.id);
-
-        if (assignmentsError || !assignments || assignments.length === 0) {
-          if(assignmentsError) console.error('Error fetching assignments:', assignmentsError);
-          setAllProjects([]);
-          setLoading(false);
-          return;
-        }
-        
-        const projectIds = assignments.map((a) => a.project_id);
-        projectQuery = supabase.rpc('get_projects_with_details').in('id', projectIds);
-      }
       
-      const { data, error } = await projectQuery;
+      const { data, error } = await supabase.rpc('get_projects_with_details');
 
       if (error) {
         console.error('Error fetching project details:', error);
@@ -80,10 +59,11 @@ export default function ProjectSelectionPage() {
 
   return (
     <div className="flex flex-col h-full w-full">
+      <h1 className="text-3xl font-bold mb-4">Projects</h1>
       <DataTable 
         columns={columns} 
         data={filteredProjects}
-        roles={roles} // Passa i ruoli al componente DataTable
+        roles={roles}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         searchTerm={searchTerm}
