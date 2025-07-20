@@ -8,6 +8,7 @@ import {
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 
+
 export default function AppShellLayout({
   children,
 }: {

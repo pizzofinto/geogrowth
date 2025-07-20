@@ -521,65 +521,76 @@ CREATE OR REPLACE FUNCTION "public"."get_upcoming_project_timelines"("project_li
     SET "search_path" TO 'public'
     AS $$
 BEGIN
+    -- Validazione input
+    IF project_limit <= 0 OR project_limit > 100 THEN
+        RAISE EXCEPTION 'project_limit deve essere tra 1 e 100, ricevuto: %', project_limit;
+    END IF;
+
     RETURN (
-        WITH 
-        -- 1. Identifica i primi N progetti dando priorità a quelli con milestone "In Progress"
-        top_projects AS (
-            SELECT 
-                pmi.project_id,
-                MIN(CASE WHEN pmi.milestone_status = 'In Progress' THEN 1 ELSE 2 END) as priority,
-                MIN(CASE WHEN pmi.milestone_target_date >= CURRENT_DATE THEN pmi.milestone_target_date ELSE NULL END) as next_deadline
-            FROM 
-                project_milestone_instances pmi
-            WHERE 
-                pmi.milestone_status NOT IN ('Completed', 'Cancelled')
-            GROUP BY 
-                pmi.project_id
-            ORDER BY 
-                priority ASC,
-                next_deadline ASC NULLS LAST
-            LIMIT project_limit
-        ),
-        -- 2. Raccoglie TUTTE le milestone (passate, presenti e future) per questi progetti
-        project_data AS (
-            SELECT
-                p.id as project_id,
-                p.project_name,
-                json_agg(
-                    json_build_object(
-                        'milestone_name', md.milestone_name,
-                        'milestone_target_date', pmi.milestone_target_date,
-                        'milestone_status', pmi.milestone_status
-                    ) ORDER BY 
-                        COALESCE(pmi.milestone_target_date, '9999-12-31'::date) ASC
-                ) as milestones
-            FROM 
-                top_projects tp
-            JOIN 
-                project_milestone_instances pmi ON tp.project_id = pmi.project_id
-            JOIN 
-                projects p ON pmi.project_id = p.id
-            JOIN 
-                milestone_definitions md ON pmi.milestone_definition_id = md.id
-            GROUP BY 
-                p.id, p.project_name, tp.priority, tp.next_deadline
-            ORDER BY 
-                tp.priority ASC, tp.next_deadline ASC NULLS LAST
-        )
-        -- 3. Restituisce il risultato finale
         SELECT 
-            COALESCE(
-                json_agg(
-                    json_build_object(
-                        'project_id', project_id,
-                        'project_name', project_name,
-                        'milestones', milestones
-                    )
-                ),
-                '[]'::json
-            )
-        FROM 
-            project_data
+            COALESCE(json_agg(project_data), '[]'::json) as result
+        FROM (
+            SELECT 
+                json_build_object(
+                    'project_id', p.id,
+                    'project_name', p.project_name,
+                    'project_start_date', COALESCE(p.project_start_date, p.created_at::date),
+                    'project_end_date', COALESCE(
+                        p.project_end_date,
+                        milestone_data.max_milestone_date + INTERVAL '30 days',
+                        CURRENT_DATE + INTERVAL '6 months'
+                    ),
+                    'milestones', COALESCE(milestone_data.milestones_json, '[]'::json)
+                ) as project_data
+            FROM (
+                -- Seleziona i progetti top con priorità ottimizzata
+                SELECT 
+                    pmi.project_id,
+                    -- Priorità: progetti "In Progress" prima, poi per data milestone più vicina
+                    MIN(CASE 
+                        WHEN pmi.milestone_status = 'In Progress' THEN 1 
+                        ELSE 2 
+                    END) as status_priority,
+                    MIN(CASE 
+                        WHEN pmi.milestone_target_date >= CURRENT_DATE 
+                        THEN pmi.milestone_target_date 
+                        ELSE '9999-12-31'::date 
+                    END) as next_milestone_date
+                FROM project_milestone_instances pmi
+                WHERE pmi.milestone_status NOT IN ('Completed', 'Cancelled')
+                GROUP BY pmi.project_id
+                ORDER BY status_priority, next_milestone_date
+                LIMIT project_limit
+            ) top_projects
+            JOIN projects p ON p.id = top_projects.project_id
+            LEFT JOIN (
+                -- Pre-aggrega i dati dei milestone per evitare subquery correlate
+                SELECT 
+                    pmi.project_id,
+                    MAX(pmi.milestone_target_date) as max_milestone_date,
+                    json_agg(
+                        json_build_object(
+                            'milestone_name', md.milestone_name,
+                            'milestone_target_date', pmi.milestone_target_date,
+                            'milestone_status', pmi.milestone_status
+                        ) ORDER BY pmi.milestone_target_date ASC
+                    ) as milestones_json
+                FROM project_milestone_instances pmi
+                JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
+                WHERE pmi.project_id IN (
+                    SELECT pmi2.project_id
+                    FROM project_milestone_instances pmi2
+                    WHERE pmi2.milestone_status NOT IN ('Completed', 'Cancelled')
+                    GROUP BY pmi2.project_id
+                    ORDER BY 
+                        MIN(CASE WHEN pmi2.milestone_status = 'In Progress' THEN 1 ELSE 2 END),
+                        MIN(CASE WHEN pmi2.milestone_target_date >= CURRENT_DATE THEN pmi2.milestone_target_date ELSE '9999-12-31'::date END)
+                    LIMIT project_limit
+                )
+                GROUP BY pmi.project_id
+            ) milestone_data ON milestone_data.project_id = p.id
+            ORDER BY top_projects.status_priority, top_projects.next_milestone_date
+        ) final_projects
     );
 END;
 $$;
