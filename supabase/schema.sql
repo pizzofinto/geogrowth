@@ -516,6 +516,78 @@ $$;
 ALTER FUNCTION "public"."get_projects_with_details"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."get_upcoming_project_timelines"("project_limit" integer DEFAULT 3) RETURNS json
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    RETURN (
+        WITH 
+        -- 1. Identifica i primi N progetti dando priorità a quelli con milestone "In Progress"
+        top_projects AS (
+            SELECT 
+                pmi.project_id,
+                MIN(CASE WHEN pmi.milestone_status = 'In Progress' THEN 1 ELSE 2 END) as priority,
+                MIN(CASE WHEN pmi.milestone_target_date >= CURRENT_DATE THEN pmi.milestone_target_date ELSE NULL END) as next_deadline
+            FROM 
+                project_milestone_instances pmi
+            WHERE 
+                pmi.milestone_status NOT IN ('Completed', 'Cancelled')
+            GROUP BY 
+                pmi.project_id
+            ORDER BY 
+                priority ASC,
+                next_deadline ASC NULLS LAST
+            LIMIT project_limit
+        ),
+        -- 2. Raccoglie TUTTE le milestone (passate, presenti e future) per questi progetti
+        project_data AS (
+            SELECT
+                p.id as project_id,
+                p.project_name,
+                json_agg(
+                    json_build_object(
+                        'milestone_name', md.milestone_name,
+                        'milestone_target_date', pmi.milestone_target_date,
+                        'milestone_status', pmi.milestone_status
+                    ) ORDER BY 
+                        COALESCE(pmi.milestone_target_date, '9999-12-31'::date) ASC
+                ) as milestones
+            FROM 
+                top_projects tp
+            JOIN 
+                project_milestone_instances pmi ON tp.project_id = pmi.project_id
+            JOIN 
+                projects p ON pmi.project_id = p.id
+            JOIN 
+                milestone_definitions md ON pmi.milestone_definition_id = md.id
+            GROUP BY 
+                p.id, p.project_name, tp.priority, tp.next_deadline
+            ORDER BY 
+                tp.priority ASC, tp.next_deadline ASC NULLS LAST
+        )
+        -- 3. Restituisce il risultato finale
+        SELECT 
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'project_id', project_id,
+                        'project_name', project_name,
+                        'milestones', milestones
+                    )
+                ),
+                '[]'::json
+            )
+        FROM 
+            project_data
+    );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_upcoming_project_timelines"("project_limit" integer) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."has_role"("role_to_check" "text") RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -2038,6 +2110,10 @@ CREATE INDEX "idx_action_plans_status" ON "public"."action_plans" USING "btree" 
 
 
 
+CREATE INDEX "idx_action_plans_status_due_date" ON "public"."action_plans" USING "btree" ("action_plan_status", "due_date");
+
+
+
 CREATE INDEX "idx_audit_archive_archived_at" ON "public"."audit_log_archive" USING "btree" ("archived_at");
 
 
@@ -2071,6 +2147,10 @@ CREATE INDEX "idx_drawings_classification_id" ON "public"."drawings" USING "btre
 
 
 CREATE INDEX "idx_drawings_item_code_search" ON "public"."drawings" USING "gin" ("to_tsvector"('"english"'::"regconfig", (("item_code" || ' '::"text") || "component_description")));
+
+
+
+CREATE INDEX "idx_milestone_instances_status_date" ON "public"."project_milestone_instances" USING "btree" ("milestone_status", "milestone_target_date");
 
 
 
@@ -2848,6 +2928,12 @@ GRANT ALL ON FUNCTION "public"."get_global_dashboard_stats"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_projects_with_details"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_projects_with_details"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_projects_with_details"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_upcoming_project_timelines"("project_limit" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_upcoming_project_timelines"("project_limit" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_upcoming_project_timelines"("project_limit" integer) TO "service_role";
 
 
 
