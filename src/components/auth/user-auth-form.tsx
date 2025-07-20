@@ -55,7 +55,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
     }
 
     if (signInData.user) {
-      // 2. Se il login ha successo, recupera i ruoli dell'utente
+    // 2. Se il login ha successo, recupera i ruoli dell'utente
       const { data: roleData, error: roleError } = await supabase
         .from('user_role_assignments')
         .select('user_roles(role_name)')
@@ -68,13 +68,16 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
         return;
       }
 
-      const roles = roleData.map((item) => item.user_roles.role_name);
+      // ✅ CORREZIONE: Aggiungi type assertion
+      const roles = roleData
+        .map((item: any) => item.user_roles?.role_name)
+        .filter(Boolean);
 
       // 3. Reindirizza in base al ruolo
       if (roles.includes('Super User')) {
         router.push('/admin');
       } else {
-        router.push('/project-selection');
+        router.push('/dashboard'); // ← Anche questa modifica che avevamo discusso prima
       }
     }
   }
