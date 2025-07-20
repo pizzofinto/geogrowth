@@ -42,43 +42,59 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // 1. Esegui il login
-    const { data: signInData, error: signInError } =
-      await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
+    try {
+      console.log('Tentativo di login...'); // Debug
+      
+      // 1. Esegui il login
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        });
 
-    if (signInError) {
-      alert('Login Error: ' + signInError.message);
-      return; // Interrompi se il login fallisce
-    }
-
-    if (signInData.user) {
-    // 2. Se il login ha successo, recupera i ruoli dell'utente
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_role_assignments')
-        .select('user_roles(role_name)')
-        .eq('user_id', signInData.user.id);
-
-      if (roleError) {
-        console.error('Error fetching user roles:', roleError);
-        // In caso di errore nel recupero dei ruoli, reindirizza a una dashboard generica
-        router.push('/dashboard');
+      if (signInError) {
+        console.error('Login Error:', signInError); // Debug
+        alert('Login Error: ' + signInError.message);
         return;
       }
 
-      // ✅ CORREZIONE: Aggiungi type assertion
-      const roles = roleData
-        .map((item: any) => item.user_roles?.role_name)
-        .filter(Boolean);
+      console.log('Login riuscito, recupero ruoli...'); // Debug
 
-      // 3. Reindirizza in base al ruolo
-      if (roles.includes('Super User')) {
-        router.push('/admin');
-      } else {
-        router.push('/dashboard'); // ← Anche questa modifica che avevamo discusso prima
+      if (signInData.user) {
+        // 2. Se il login ha successo, recupera i ruoli dell'utente
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_role_assignments')
+          .select('user_roles(role_name)')
+          .eq('user_id', signInData.user.id);
+
+        if (roleError) {
+          console.error('Error fetching user roles:', roleError);
+          // In caso di errore nel recupero dei ruoli, reindirizza a una dashboard generica
+          router.push('/dashboard');
+          return;
+        }
+
+        console.log('Role data:', roleData); // Debug
+
+        // ✅ CORREZIONE: Aggiungi type assertion e gestione sicura
+        const roles = roleData
+          .map((item: any) => item.user_roles?.role_name)
+          .filter(Boolean);
+
+        console.log('Roles mappati:', roles); // Debug
+
+        // 3. Reindirizza in base al ruolo
+        if (roles.includes('Super User')) {
+          console.log('Reindirizzo a /admin'); // Debug
+          router.push('/admin');
+        } else {
+          console.log('Reindirizzo a /dashboard'); // Debug
+          router.push('/dashboard');
+        }
       }
+    } catch (error) {
+      console.error('Errore durante il login:', error);
+      alert('Si è verificato un errore durante il login. Riprova.');
     }
   }
 

@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 
 // Definiamo un tipo più ricco per il nostro utente, che includa il nome completo
-// preso dalla nostra tabella 'users'
 export interface UserProfile extends User {
   full_name?: string;
   avatar_url?: string;
@@ -28,37 +27,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔍 Auth state change:', event, !!session?.user);
+      
       const authUser = session?.user ?? null;
 
       if (authUser) {
-        // 1. Se l'utente è loggato, recuperiamo il suo profilo dalla tabella 'users'
-        const { data: profile } = await supabase
-          .from('users')
-          .select('full_name')
-          .eq('id', authUser.id)
-          .single();
+        try {
+          // 1. Recuperiamo il profilo dalla tabella 'users'
+          const { data: profile, error: profileError } = await supabase
+            .from('users')
+            .select('full_name')
+            .eq('id', authUser.id)
+            .single();
 
-        // 2. Recuperiamo i ruoli come prima
-        const { data: rolesData } = await supabase
-          .from('user_role_assignments')
-          .select('user_roles(role_name)')
-          .eq('user_id', authUser.id);
-        
-        const userRoles = rolesData?.map((item) => item.user_roles.role_name) ?? [];
-        
-        // 3. Creiamo un oggetto utente "arricchito" con il nome completo
-        const userWithProfile: UserProfile = {
-          ...authUser,
-          full_name: profile?.full_name,
-        };
+          if (profileError) {
+            console.warn('Errore recupero profilo:', profileError);
+          }
 
-        setUser(userWithProfile);
-        setRoles(userRoles);
+          // 2. Recuperiamo i ruoli
+          const { data: rolesData, error: rolesError } = await supabase
+            .from('user_role_assignments')
+            .select('user_roles(role_name)')
+            .eq('user_id', authUser.id);
+          
+          if (rolesError) {
+            console.error('Errore recupero ruoli:', rolesError);
+          }
 
+          // 3. Mappiamo i ruoli in modo sicuro
+          const userRoles: string[] = [];
+          if (rolesData && Array.isArray(rolesData)) {
+            rolesData.forEach((item: any) => {
+              if (item?.user_roles?.role_name) {
+                userRoles.push(item.user_roles.role_name);
+              }
+            });
+          }
+
+          console.log('🔍 Ruoli utente:', userRoles);
+          
+          // 4. Creiamo l'oggetto utente arricchito
+          const userWithProfile: UserProfile = {
+            ...authUser,
+            full_name: profile?.full_name,
+          };
+
+          setUser(userWithProfile);
+          setRoles(userRoles);
+
+        } catch (error) {
+          console.error('Errore durante il setup auth:', error);
+          setUser(authUser as UserProfile);
+          setRoles([]);
+        }
       } else {
+        console.log('🔍 Nessun utente autenticato');
         setUser(null);
         setRoles([]);
       }
+      
       setIsLoading(false);
     });
 
