@@ -516,6 +516,36 @@ $$;
 ALTER FUNCTION "public"."get_projects_with_details"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."get_recent_projects_for_user"("user_id_param" "uuid", "limit_param" integer DEFAULT 4) RETURNS TABLE("project_id" bigint, "project_name" "text", "project_status" "text", "last_accessed" timestamp with time zone, "total_components" integer, "overdue_action_plans_count" integer, "otop_percentage" numeric, "ot_percentage" numeric, "ko_percentage" numeric, "next_milestone_name" "text", "next_milestone_date" "date")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    pwd.id as project_id,
+    pwd.project_name,
+    pwd.project_status::TEXT,
+    COALESCE(upa.last_accessed, upa.assigned_at) as last_accessed,
+    pwd.total_components::INTEGER,
+    pwd.overdue_action_plans_count::INTEGER,
+    pwd.otop_percentage,
+    pwd.ot_percentage,
+    pwd.ko_percentage,
+    pwd.next_milestone_name,
+    pwd.next_milestone_date
+  FROM get_projects_with_details() pwd
+  INNER JOIN user_project_assignments upa ON pwd.id = upa.project_id
+  WHERE upa.user_id = user_id_param
+  AND pwd.project_status = 'Active'  -- Solo progetti attivi
+  ORDER BY COALESCE(upa.last_accessed, upa.assigned_at) DESC NULLS LAST
+  LIMIT limit_param;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_recent_projects_for_user"("user_id_param" "uuid", "limit_param" integer) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_upcoming_project_timelines"("project_limit" integer DEFAULT 3) RETURNS json
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -993,6 +1023,21 @@ ALTER FUNCTION "public"."update_parent_status_from_spc"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."update_parent_status_from_spc"() IS 'Triggers parent status recalculation when SPC values change.';
 
+
+
+CREATE OR REPLACE FUNCTION "public"."update_project_last_accessed"("project_id_param" bigint, "user_id_param" "uuid" DEFAULT "auth"."uid"()) RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  UPDATE user_project_assignments
+  SET last_accessed = NOW()
+  WHERE project_id = project_id_param 
+  AND user_id = user_id_param;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_project_last_accessed"("project_id_param" bigint, "user_id_param" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_updated_at_column"() RETURNS "trigger"
@@ -1670,7 +1715,8 @@ CREATE TABLE IF NOT EXISTS "public"."user_project_assignments" (
     "user_id" "uuid" NOT NULL,
     "project_id" bigint NOT NULL,
     "assigned_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "assigned_by_user_id" "uuid"
+    "assigned_by_user_id" "uuid",
+    "last_accessed" timestamp with time zone
 );
 
 
@@ -2214,6 +2260,10 @@ CREATE INDEX "idx_projects_status" ON "public"."projects" USING "btree" ("projec
 
 
 CREATE INDEX "idx_spc_values_cavity_evaluation_id" ON "public"."spc_values" USING "btree" ("cavity_evaluation_id");
+
+
+
+CREATE INDEX "idx_user_project_assignments_last_accessed" ON "public"."user_project_assignments" USING "btree" ("user_id", "last_accessed" DESC NULLS LAST);
 
 
 
@@ -2942,6 +2992,12 @@ GRANT ALL ON FUNCTION "public"."get_projects_with_details"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."get_recent_projects_for_user"("user_id_param" "uuid", "limit_param" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_recent_projects_for_user"("user_id_param" "uuid", "limit_param" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_recent_projects_for_user"("user_id_param" "uuid", "limit_param" integer) TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_upcoming_project_timelines"("project_limit" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_upcoming_project_timelines"("project_limit" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_upcoming_project_timelines"("project_limit" integer) TO "service_role";
@@ -2987,6 +3043,12 @@ GRANT ALL ON FUNCTION "public"."update_parent_component_status"() TO "service_ro
 GRANT ALL ON FUNCTION "public"."update_parent_status_from_spc"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_parent_status_from_spc"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_parent_status_from_spc"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_project_last_accessed"("project_id_param" bigint, "user_id_param" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."update_project_last_accessed"("project_id_param" bigint, "user_id_param" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_project_last_accessed"("project_id_param" bigint, "user_id_param" "uuid") TO "service_role";
 
 
 

@@ -4,13 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, AlertTriangle, Clock, RefreshCw } from 'lucide-react';
+import { Activity, AlertTriangle, Clock } from 'lucide-react';
 import { ModernHorizontalTimeline } from './modern-horizontal-timeline';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
-import { toast } from "sonner";
 import React from 'react';
+import RecentProjectsSection from '@/components/dashboard/RecentProjectsSection';
 
 // Tipi di dati aggiornati per includere 'Cancelled'
 type Milestone = {
@@ -51,7 +50,6 @@ export default function GlobalDashboardPage() {
   const [loading, setLoading] = useState<LoadingState>({ stats: true, timelines: true });
   const [error, setError] = useState<ErrorState>({ stats: null, timelines: null });
   const [timelineLimit, setTimelineLimit] = useState(3);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Funzione per fetch delle statistiche
   const fetchStats = useCallback(async () => {
@@ -109,24 +107,6 @@ export default function GlobalDashboardPage() {
     }
   }, [timelineLimit]);
 
-  // Funzione di refresh generale
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    
-    try {
-      await Promise.all([fetchStats(), fetchTimelines()]);
-      toast.success("Dashboard aggiornata", {
-        description: "I dati sono stati aggiornati con successo.",
-      });
-    } catch (err) {
-      toast.error("Errore nell'aggiornamento", {
-        description: "Si è verificato un errore durante l'aggiornamento dei dati.",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [fetchStats, fetchTimelines]);
-
   // Effect per il caricamento iniziale
   useEffect(() => {
     document.title = 'Global Dashboard | GeoGrowth';
@@ -140,18 +120,9 @@ export default function GlobalDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6 mt-4">
-      {/* Header con refresh button */}
+      {/* Header semplificato senza refresh button */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          disabled={isRefreshing || loading.stats || loading.timelines}
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Aggiorna
-        </Button>
       </div>
 
       {/* Sezione KPI */}
@@ -254,6 +225,9 @@ export default function GlobalDashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 🆕 SEZIONE SPOSTATA: Recent Projects */}
+      <RecentProjectsSection limit={4} />
     </div>
   );
 }
