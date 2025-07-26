@@ -64,10 +64,14 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <NextIntlClientProvider messages={messages}>
-      <I18nProvider initialLocale={locale as Locale}>
-        {children}
-      </I18nProvider>
-    </NextIntlClientProvider>
+    <html lang={locale}>
+      <body>
+        <NextIntlClientProvider messages={messages}>
+          <I18nProvider initialLocale={locale as Locale}>
+            {children}
+          </I18nProvider>
+        </NextIntlClientProvider>
+      </body>
+    </html>
   );
 }

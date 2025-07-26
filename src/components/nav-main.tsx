@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
+import { useI18n } from '@/contexts/I18nContext';
 
 type NavItem = {
   labelKey: string; // Chiave di traduzione che corrisponde ai tuoi file
@@ -64,6 +65,7 @@ export function NavMain() {
   const pathname = usePathname();
   const { roles, isLoading } = useAuth();
   const { isCollapsed } = useSidebar();
+  const { locale } = useI18n();
   
   // Hook per traduzioni di next-intl con namespace navigation
   const t = useTranslations('navigation');
@@ -82,6 +84,12 @@ export function NavMain() {
     );
   }
 
+  // Funzione helper per costruire URL con locale
+  const buildHref = (href: string) => {
+    if (href === '#') return href;
+    return `/${locale}${href}`;
+  };
+
   // Logica di rendering per la modalità compressa
   if (isCollapsed) {
     return (
@@ -93,17 +101,16 @@ export function NavMain() {
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <Link
-                      href={item.items?.[0]?.href ?? item.href}
-                      className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                        pathname.startsWith(item.href) && item.href !== '#' && "bg-accent text-accent-foreground"
-                      )}
+                      href={item.items?.[0]?.href ? buildHref(item.items[0].href) : buildHref(item.href)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <item.icon className="h-4 w-4" />
                       <span className="sr-only">{t(item.labelKey)}</span>
                     </Link>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{t(item.labelKey)}</TooltipContent>
+                  <TooltipContent side="right" align="start">
+                    <p>{t(item.labelKey)}</p>
+                  </TooltipContent>
                 </Tooltip>
               </SidebarMenuItem>
             ))}
@@ -118,62 +125,55 @@ export function NavMain() {
     <SidebarGroup>
       <SidebarGroupLabel>{t('platform')}</SidebarGroupLabel>
       <SidebarMenu>
-        {navItems.map((item) =>
-          item.items ? (
-            <Collapsible
-              key={item.labelKey}
-              defaultOpen={item.items.some(sub => pathname.startsWith(sub.href))}
-              className="group/collapsible"
-            >
-              <SidebarMenuItem>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton 
-                    tooltip={t(item.labelKey)} 
-                    href="#"
+        {navItems.map((item) => {
+          const isActive = pathname.includes(item.href) && item.href !== '#';
+          
+          return (
+            <SidebarMenuItem key={item.labelKey}>
+              {item.items ? (
+                <Collapsible defaultOpen={isActive}>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton href={buildHref(item.href)}>
+                      <item.icon className="mr-2 h-4 w-4" />
+                      <span>{t(item.labelKey)}</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform data-[state=open]:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {item.items.map((subItem) => {
+                        const isSubActive = pathname.includes(subItem.href);
+                        return (
+                          <SidebarMenuSubItem key={subItem.labelKey}>
+                            <SidebarMenuSubButton
+                              href={buildHref(subItem.href)}
+                              className={cn(isSubActive && "bg-accent text-accent-foreground")}
+                            >
+                              <subItem.icon className="mr-2 h-3 w-3" />
+                              <span>{t(subItem.labelKey)}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </Collapsible>
+              ) : (
+                <SidebarMenuButton href={''}>
+                  <Link 
+                    href={buildHref(item.href)}
                     className={cn(
-                      pathname.startsWith('/admin') && item.labelKey === 'admin' && "bg-accent text-accent-foreground"
+                      isActive && "bg-accent text-accent-foreground"
                     )}
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="mr-2 h-4 w-4" />
                     <span>{t(item.labelKey)}</span>
-                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    {item.items
-                      .filter(subItem => subItem.requiredRoles.some(role => roles.includes(role)))
-                      .map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.labelKey}>
-                          <SidebarMenuSubButton 
-                            href={subItem.href}
-                            className={cn(
-                              pathname === subItem.href && "bg-accent text-accent-foreground"
-                            )}
-                          >
-                            <span>{t(subItem.labelKey)}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </SidebarMenuItem>
-            </Collapsible>
-          ) : (
-            <SidebarMenuItem key={item.labelKey}>
-              <SidebarMenuButton 
-                tooltip={t(item.labelKey)} 
-                href={item.href}
-                className={cn(
-                  pathname.startsWith(item.href) && item.href !== '#' && "bg-accent text-accent-foreground"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{t(item.labelKey)}</span>
-              </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuButton>
+              )}
             </SidebarMenuItem>
-          )
-        )}
+          );
+        })}
       </SidebarMenu>
     </SidebarGroup>
   );
