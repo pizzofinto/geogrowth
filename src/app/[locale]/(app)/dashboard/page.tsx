@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import React from 'react';
 import RecentProjectsSection from '@/components/dashboard/RecentProjectsSection';
+import { useTranslations } from 'next-intl';
 
 // Tipi di dati aggiornati per includere 'Cancelled'
 type Milestone = {
@@ -45,6 +46,10 @@ type ErrorState = {
 };
 
 export default function GlobalDashboardPage() {
+  const t = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
+  const tMessages = useTranslations('messages');
+  
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [timelines, setTimelines] = useState<ProjectWithTimeline[]>([]);
   const [loading, setLoading] = useState<LoadingState>({ stats: true, timelines: true });
@@ -65,13 +70,13 @@ export default function GlobalDashboardPage() {
       
       setStats(data);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Errore nel caricamento delle statistiche';
+      const errorMessage = err instanceof Error ? err.message : tMessages('errorLoadingData');
       setError(prev => ({ ...prev, stats: errorMessage }));
       console.error('Error fetching dashboard stats:', err);
     } finally {
       setLoading(prev => ({ ...prev, stats: false }));
     }
-  }, []);
+  }, [tMessages]);
 
   // Funzione per fetch delle timeline
   const fetchTimelines = useCallback(async () => {
@@ -99,19 +104,19 @@ export default function GlobalDashboardPage() {
       
       setTimelines(validatedTimelines);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Errore nel caricamento delle timeline';
+      const errorMessage = err instanceof Error ? err.message : tMessages('errorLoadingData');
       setError(prev => ({ ...prev, timelines: errorMessage }));
       console.error('Error fetching timelines:', err);
     } finally {
       setLoading(prev => ({ ...prev, timelines: false }));
     }
-  }, [timelineLimit]);
+  }, [timelineLimit, tMessages]);
 
   // Effect per il caricamento iniziale
   useEffect(() => {
-    document.title = 'Global Dashboard | GeoGrowth';
+    document.title = `${t('title')} | GeoGrowth`;
     fetchStats();
-  }, [fetchStats]);
+  }, [fetchStats, t]);
 
   // Effect separato per le timeline (quando cambia il limite)
   useEffect(() => {
@@ -122,7 +127,7 @@ export default function GlobalDashboardPage() {
     <div className="flex flex-col gap-6 mt-4">
       {/* Header semplificato senza refresh button */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
       </div>
 
       {/* Sezione KPI */}
@@ -134,24 +139,24 @@ export default function GlobalDashboardPage() {
         ) : error.stats ? (
           <Card className="md:col-span-2 lg:col-span-3">
             <CardContent className="flex items-center justify-center h-28">
-              <p className="text-sm text-destructive">Errore: {error.stats}</p>
+              <p className="text-sm text-destructive">{tCommon('error')}: {error.stats}</p>
             </CardContent>
           </Card>
         ) : (
           <>
             <KpiCard 
-              title="Active Projects" 
+              title={t('activeProjects')} 
               value={stats?.active_projects ?? 0} 
               icon={Activity} 
             />
             <KpiCard 
-              title="Projects at Risk" 
+              title={t('risks')} 
               value={stats?.projects_at_risk ?? 0} 
               icon={AlertTriangle} 
               variant={stats?.projects_at_risk && stats.projects_at_risk > 0 ? 'destructive' : 'default'} 
             />
             <KpiCard 
-              title="Upcoming Deadlines" 
+              title={t('upcomingDeadlines')} 
               description="In the next 7 days" 
               value={stats?.upcoming_deadlines ?? 0} 
               icon={Clock} 
@@ -163,7 +168,7 @@ export default function GlobalDashboardPage() {
       {/* Sezione Timeline */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Project Timelines</CardTitle>
+          <CardTitle>{t('projectTimeline')}</CardTitle>
           <Select 
             value={String(timelineLimit)} 
             onValueChange={(value) => setTimelineLimit(Number(value))}
@@ -191,7 +196,7 @@ export default function GlobalDashboardPage() {
             </div>
           ) : error.timelines ? (
             <div className="flex items-center justify-center py-8">
-              <p className="text-sm text-destructive">Errore: {error.timelines}</p>
+              <p className="text-sm text-destructive">{tCommon('error')}: {error.timelines}</p>
             </div>
           ) : timelines && timelines.length > 0 ? (
             <div className="space-y-6">
@@ -219,7 +224,7 @@ export default function GlobalDashboardPage() {
           ) : (
             <div className="flex items-center justify-center py-8">
               <p className="text-sm text-muted-foreground">
-                No projects with upcoming deadlines found.
+                {tMessages('noResults')}
               </p>
             </div>
           )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Locale, locales, defaultLocale } from '@/i18n/config';
@@ -21,11 +22,12 @@ interface I18nProviderProps {
 export function I18nProvider({ children, initialLocale = defaultLocale }: I18nProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
   const [isChangingLocale, setIsChangingLocale] = useState(false);
-  const { user } = useAuth(); // ← Ora usa AuthContext
+  const { user } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const setLocale = async (newLocale: Locale) => {
-    console.log('🔥 setLocale chiamata con:', newLocale);
-    console.log('🔥 Locale attuale:', locale);
+    console.log('🌍 Changing language from', locale, 'to', newLocale);
     
     if (!locales.includes(newLocale)) {
       console.error('❌ Locale non supportata:', newLocale);
@@ -37,7 +39,6 @@ export function I18nProvider({ children, initialLocale = defaultLocale }: I18nPr
       return;
     }
 
-    console.log('🌍 Cambio lingua da', locale, 'a', newLocale);
     setIsChangingLocale(true);
     
     try {
@@ -51,7 +52,6 @@ export function I18nProvider({ children, initialLocale = defaultLocale }: I18nPr
 
         if (error) {
           console.error('❌ Errore salvataggio database:', error);
-          // Continua comunque con localStorage
         } else {
           console.log('✅ Preferenza salvata nel database');
         }
@@ -61,27 +61,26 @@ export function I18nProvider({ children, initialLocale = defaultLocale }: I18nPr
       localStorage.setItem('preferred-language', newLocale);
       console.log('💾 Salvato in localStorage:', newLocale);
       
-      // 🔄 Costruisci il nuovo URL
-      const currentPath = window.location.pathname;
-      console.log('📍 Current path:', currentPath);
+      // 🔄 Costruisci il nuovo URL mantenendo il path attuale
+      let pathWithoutLocale = pathname;
       
-      let pathWithoutLocale = currentPath;
-      if (currentPath.match(/^\/[a-z]{2}\//)) {
-        pathWithoutLocale = currentPath.substring(3);
-      } else if (currentPath.match(/^\/[a-z]{2}$/)) {
-        pathWithoutLocale = '/';
+      // Rimuovi la locale attuale dal path
+      if (pathname.startsWith(`/${locale}`)) {
+        pathWithoutLocale = pathname.substring(3) || '/';
       }
       
-      console.log('📍 Path without locale:', pathWithoutLocale);
       const newPath = `/${newLocale}${pathWithoutLocale}`;
-      console.log('📍 New path:', newPath);
+      console.log('🚀 Navigating from', pathname, 'to', newPath);
       
+      // Aggiorna lo stato locale
       setLocaleState(newLocale);
-      console.log('🚀 Navigating to:', newPath);
-      window.location.href = newPath;
+      
+      // Naviga al nuovo URL
+      router.push(newPath);
       
     } catch (error) {
       console.error('❌ Errore nel cambio lingua:', error);
+    } finally {
       setIsChangingLocale(false);
     }
   };

@@ -17,6 +17,7 @@ import {
 import { useI18n } from '@/contexts/I18nContext';
 import { Locale, locales } from '@/i18n/config';
 import { useTranslations } from 'next-intl';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 interface LanguageSwitcherProps {
@@ -45,8 +46,17 @@ export function LanguageSwitcher({
 }: LanguageSwitcherProps) {
   const { locale, setLocale, isChangingLocale } = useI18n();
   const tCommon = useTranslations('common');
+  const pathname = usePathname();
+
+  // Debug: vediamo cosa sta succedendo
+  console.log('🔍 Language Switcher Debug:', {
+    locale,
+    pathname,
+    isChangingLocale
+  });
 
   const handleLanguageChange = async (newLocale: Locale) => {
+    console.log('🔥 Language change requested:', newLocale, 'current:', locale);
     if (newLocale !== locale && !isChangingLocale) {
       await setLocale(newLocale);
     }
@@ -74,7 +84,7 @@ export function LanguageSwitcher({
               </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>{tCommon('language')}</p>
+              <p>{tCommon('language')} (Current: {locale})</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

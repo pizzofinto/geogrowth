@@ -2,14 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-// 🌍 Importa next-intl
-import { getLocale, getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
-// 🔐 Importa AuthProvider
 import { AuthProvider } from '@/contexts/AuthContext';
-// 🌍 Importa I18nProvider
 import { I18nProvider } from '@/contexts/I18nContext';
-import { Locale } from '@/i18n/config';
+import { Locale, defaultLocale } from '@/i18n/config';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,39 +17,44 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Metadata statici di base
 export const metadata: Metadata = {
-  title: {
-    template: '%s | GeoGrowth',
-    default: 'GeoGrowth',
-  },
-  description: 'A component maturity tracking application.',
+  title: "GeoGrowth",
+  description: "Component maturity tracking application",
 };
 
-export default async function RootLayout({
+// Funzione per estrarre locale dall'URL
+function getLocaleFromUrl(): Locale {
+  if (typeof window !== 'undefined') {
+    const pathname = window.location.pathname;
+    const segments = pathname.split('/');
+    const possibleLocale = segments[1];
+    
+    if (possibleLocale && (possibleLocale === 'en' || possibleLocale === 'it')) {
+      return possibleLocale as Locale;
+    }
+  }
+  return defaultLocale;
+}
+
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // 🌍 Ottieni locale e messaggi dal server
-  const locale = await getLocale();
-  const messages = await getMessages();
+  // Per il root layout, usiamo la locale di default
+  // La locale corretta verrà gestita dal layout [locale]
+  const locale = defaultLocale;
 
   return (
     <html lang={locale}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* 🌍 Wrappa tutto con NextIntlClientProvider */}
-        <NextIntlClientProvider messages={messages}>
-          {/* 🔐 Aggiungi AuthProvider qui */}
-          <AuthProvider>
-            {/* 🌍 Aggiungi I18nProvider qui per tutte le pagine */}
-            <I18nProvider initialLocale={locale as Locale}>
-              {children}
-              <Toaster />
-            </I18nProvider>
-          </AuthProvider>
-        </NextIntlClientProvider>
+        <AuthProvider>
+          {children}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
