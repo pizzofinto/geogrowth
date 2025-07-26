@@ -28,6 +28,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useTranslations } from 'next-intl';
 
 interface UserNavProps {
   isCollapsed: boolean;
@@ -36,6 +37,10 @@ interface UserNavProps {
 export function UserNav({ isCollapsed }: UserNavProps) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  
+  // Translations
+  const tUser = useTranslations('user');
+  const tCommon = useTranslations('common');
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -51,6 +56,8 @@ export function UserNav({ isCollapsed }: UserNavProps) {
     );
   }
 
+  const displayName = user?.user_metadata.full_name || tUser('defaultUserName');
+
   if (isCollapsed) {
     return (
       <DropdownMenu>
@@ -58,9 +65,14 @@ export function UserNav({ isCollapsed }: UserNavProps) {
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-lg">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-lg"
+                  aria-label={tUser('userMenu')}
+                >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/avatars/01.png" alt="User avatar" />
+                    <AvatarImage src="/avatars/01.png" alt={tUser('userAvatar')} />
                     <AvatarFallback>
                       {user?.email?.substring(0, 1).toUpperCase()}
                     </AvatarFallback>
@@ -68,14 +80,14 @@ export function UserNav({ isCollapsed }: UserNavProps) {
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
-            <TooltipContent side="right">Account</TooltipContent>
+            <TooltipContent side="right">{tUser('account')}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
         <DropdownMenuContent className="w-56" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">
-                {user?.user_metadata.full_name ?? 'User Name'}
+                {displayName}
               </p>
               <p className="text-xs leading-none text-muted-foreground">
                 {user?.email}
@@ -86,21 +98,21 @@ export function UserNav({ isCollapsed }: UserNavProps) {
           <DropdownMenuGroup>
             <DropdownMenuItem>
               <UserIcon className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+              <span>{tCommon('profile')}</span>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <CreditCard className="mr-2 h-4 w-4" />
-              <span>Billing</span>
+              <span>{tUser('billing')}</span>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+              <span>{tCommon('settings')}</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
+            <span>{tCommon('logout')}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -113,17 +125,18 @@ export function UserNav({ isCollapsed }: UserNavProps) {
         <Button
           variant="ghost"
           className="relative h-auto w-full justify-between px-2"
+          aria-label={tUser('userMenu')}
         >
           <div className="flex items-center gap-2">
             <Avatar className="h-9 w-9">
-              <AvatarImage src="/avatars/01.png" alt="User avatar" />
+              <AvatarImage src="/avatars/01.png" alt={tUser('userAvatar')} />
               <AvatarFallback>
                 {user?.email?.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col items-start text-left">
               <p className="text-sm font-medium leading-none">
-                {user?.user_metadata.full_name ?? 'User Name'}
+                {displayName}
               </p>
               <p className="text-xs leading-none text-muted-foreground">
                 {user?.email}
@@ -137,7 +150,7 @@ export function UserNav({ isCollapsed }: UserNavProps) {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user?.user_metadata.full_name ?? 'User Name'}
+              {displayName}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {user?.email}
@@ -148,21 +161,21 @@ export function UserNav({ isCollapsed }: UserNavProps) {
         <DropdownMenuGroup>
           <DropdownMenuItem>
             <UserIcon className="mr-2 h-4 w-4" />
-            <span>Profile</span>
+            <span>{tCommon('profile')}</span>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <CreditCard className="mr-2 h-4 w-4" />
-            <span>Billing</span>
+            <span>{tUser('billing')}</span>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+            <span>{tCommon('settings')}</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>{tCommon('logout')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

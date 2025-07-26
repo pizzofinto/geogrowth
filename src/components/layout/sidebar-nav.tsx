@@ -8,12 +8,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useTranslations } from 'next-intl';
 
-const allNavItems = [
-  { href: '/dashboard', icon: Home, label: 'Dashboard', requiredRoles: ['Super User', 'Supplier Quality', 'Engineering', 'External User'] },
-  { href: '/components', icon: Package, label: 'Components', requiredRoles: ['Super User', 'Supplier Quality', 'Engineering', 'External User'] },
-  { href: '/admin', icon: Users, label: 'Admin Panel', requiredRoles: ['Super User'] },
-  { href: '/analytics', icon: LineChart, label: 'Analytics', requiredRoles: ['Super User', 'Supplier Quality'] },
+type NavItem = {
+  href: string;
+  icon: LucideIcon;
+  labelKey: string;
+  requiredRoles: string[];
+};
+
+const allNavItems: NavItem[] = [
+  { href: '/dashboard', icon: Home, labelKey: 'dashboard', requiredRoles: ['Super User', 'Supplier Quality', 'Engineering', 'External User'] },
+  { href: '/components', icon: Package, labelKey: 'components', requiredRoles: ['Super User', 'Supplier Quality', 'Engineering', 'External User'] },
+  { href: '/admin', icon: Users, labelKey: 'admin', requiredRoles: ['Super User'] },
+  { href: '/analytics', icon: LineChart, labelKey: 'analytics', requiredRoles: ['Super User', 'Supplier Quality'] },
 ];
 
 interface SidebarNavProps {
@@ -23,6 +31,7 @@ interface SidebarNavProps {
 export function SidebarNav({ isCollapsed }: SidebarNavProps) {
   const pathname = usePathname();
   const { roles, isLoading } = useAuth();
+  const tNavigation = useTranslations('navigation');
 
   const navItems = allNavItems.filter(item => 
     item.requiredRoles.some(requiredRole => roles.includes(requiredRole))
@@ -51,12 +60,13 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
                     "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
                     pathname.startsWith(item.href) && "bg-accent text-accent-foreground"
                   )}
+                  aria-label={tNavigation(item.labelKey)}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span className="sr-only">{item.label}</span>
+                  <span className="sr-only">{tNavigation(item.labelKey)}</span>
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right">{item.label}</TooltipContent>
+              <TooltipContent side="right">{tNavigation(item.labelKey)}</TooltipContent>
             </Tooltip>
           ) : (
             <Link
@@ -68,7 +78,7 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
               )}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              {tNavigation(item.labelKey)}
             </Link>
           )
         )}

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/sidebar';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import { useTranslations } from 'next-intl';
 
 // 1. Definita l'icona SVG personalizzata di GeoGrowth
 const GeoGrowthIcon = () => (
@@ -28,13 +29,23 @@ const GeoGrowthIcon = () => (
   </svg>
 );
 
-// 2. Il componente AppLogo ora usa la nuova icona
+// 2. Il componente AppLogo ora usa la nuova icona con traduzioni
 function AppLogo() {
   const { isCollapsed } = useSidebar();
+  const t = useTranslations('common');
+  
   return (
-    <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+    <Link 
+      href="/dashboard" 
+      className="flex items-center gap-2 font-semibold"
+      aria-label={t('goToDashboard')}
+    >
       <GeoGrowthIcon />
-      {!isCollapsed && <span>GeoGrowth Inc.</span>}
+      {!isCollapsed && (
+        <span className="truncate">
+          {t('companyName')}
+        </span>
+      )}
     </Link>
   );
 }

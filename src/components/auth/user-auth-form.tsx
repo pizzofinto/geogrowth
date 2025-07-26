@@ -3,8 +3,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -17,22 +19,39 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/lib/supabaseClient';
-
-const formSchema = z.object({
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
-  }),
-  password: z.string().min(1, {
-    message: 'Password cannot be empty.',
-  }),
-});
+import { useTranslations } from 'next-intl';
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Estrae la locale corrente dal percorso per i link dinamici
+  const currentLocale = pathname.split('/')[1] || 'en';
+
+  // Hook per le traduzioni con next-intl
+  const tAuth = useTranslations('auth');
+  const tCommon = useTranslations('common');
+  const tValidation = useTranslations('validation');
+  const tErrors = useTranslations('errors');
+
+  // Schema di validazione per il form di login con traduzioni
+  const formSchema = z.object({
+    email: z.string().email({
+      message: tValidation('email'),
+    }),
+    password: z.string().min(1, {
+      message: tValidation('required'),
+    }),
+  });
+
+  // Inizializzazione del form con react-hook-form e Zod
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -41,11 +60,17 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
     },
   });
 
+  /**
+   * Gestisce l'invio del form di login.
+   * Esegue l'autenticazione, recupera i dati utente e reindirizza
+   * alla dashboard appropriata usando il router di Next.js.
+   */
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    setError(null);
+
     try {
-      console.log('Tentativo di login...'); // Debug
-      
-      // 1. Esegui il login
+      // 1. Esegui il login con Supabase
       const { data: signInData, error: signInError } =
         await supabase.auth.signInWithPassword({
           email: values.email,
@@ -53,53 +78,77 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
         });
 
       if (signInError) {
-        console.error('Login Error:', signInError); // Debug
-        alert('Login Error: ' + signInError.message);
+        console.error('❌ Login Error:', signInError);
+        setError(tAuth('invalidCredentials'));
         return;
       }
 
-      console.log('Login riuscito, recupero ruoli...'); // Debug
+      if (!signInData.user) {
+        // Controllo di sicurezza nel caso in cui l'utente non venga restituito
+        setError(tAuth('loginError'));
+        return;
+      }
 
-      if (signInData.user) {
-        // 2. Se il login ha successo, recupera i ruoli dell'utente
-        const { data: roleData, error: roleError } = await supabase
+      // 2. Recupera profilo e ruoli in parallelo per maggiore efficienza
+      const [
+        { data: profile, error: profileError },
+        { data: roleData, error: roleError }
+      ] = await Promise.all([
+        supabase
+          .from('users')
+          .select('preferred_language')
+          .eq('id', signInData.user.id)
+          .single(),
+        supabase
           .from('user_role_assignments')
           .select('user_roles(role_name)')
-          .eq('user_id', signInData.user.id);
+          .eq('user_id', signInData.user.id)
+      ]);
 
-        if (roleError) {
-          console.error('Error fetching user roles:', roleError);
-          // In caso di errore nel recupero dei ruoli, reindirizza a una dashboard generica
-          router.push('/dashboard');
-          return;
-        }
-
-        console.log('Role data:', roleData); // Debug
-
-        // ✅ CORREZIONE: Aggiungi type assertion e gestione sicura
-        const roles = roleData
-          .map((item: any) => item.user_roles?.role_name)
-          .filter(Boolean);
-
-        console.log('Roles mappati:', roles); // Debug
-
-        // 3. Reindirizza in base al ruolo
-        if (roles.includes('Super User')) {
-          console.log('Reindirizzo a /admin'); // Debug
-          router.push('/admin');
-        } else {
-          console.log('Reindirizzo a /dashboard'); // Debug
-          router.push('/dashboard');
-        }
+      if (profileError) {
+        console.warn('⚠️ Could not fetch user profile:', profileError.message);
       }
+      if (roleError) {
+        console.warn('⚠️ Could not fetch user roles:', roleError.message);
+      }
+
+      // 3. Determina la lingua e la destinazione finale
+      let preferredLanguage = 'en'; // Lingua di default
+      if (profile?.preferred_language && ['en', 'it'].includes(profile.preferred_language)) {
+        preferredLanguage = profile.preferred_language;
+      }
+
+      const roles = roleData
+        ?.map((item: any) => item.user_roles?.role_name)
+        .filter(Boolean) || [];
+        
+      let destination = '/dashboard'; // Destinazione di default
+      if (roles.includes('Super User')) {
+        destination = '/admin';
+      }
+
+      // 4. Reindirizza usando router.push, il metodo corretto in Next.js
+      const finalUrl = `/${preferredLanguage}${destination}`;
+      console.log(`🚀 Redirecting to: ${finalUrl}`);
+      
+      router.push(finalUrl);
+
     } catch (error) {
-      console.error('Errore durante il login:', error);
-      alert('Si è verificato un errore durante il login. Riprova.');
+      console.error('❌ An unexpected error occurred during login:', error);
+      setError(tErrors('generic'));
+    } finally {
+      setIsLoading(false);
     }
   }
 
   return (
     <div className={cn('grid gap-6', className)} {...props}>
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
           <FormField
@@ -107,11 +156,15 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem className="grid gap-2">
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{tCommon('email')}</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="name@example.com"
+                    placeholder={tAuth('emailPlaceholder')}
                     type="email"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    autoCorrect="off"
+                    disabled={isLoading}
                     {...field}
                   />
                 </FormControl>
@@ -119,29 +172,69 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
               </FormItem>
             )}
           />
+          
           <FormField
             control={form.control}
             name="password"
             render={({ field }) => (
               <FormItem className="grid gap-2">
                 <div className="flex items-center">
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>{tCommon('password')}</FormLabel>
                   <Link
-                    href="/forgot-password"
-                    className="ml-auto inline-block text-sm underline"
+                    href={`/${currentLocale}/forgot-password`}
+                    className="ml-auto inline-block text-sm underline text-muted-foreground hover:text-primary transition-colors"
                   >
-                    Forgot your password?
+                    {tAuth('forgotPassword')}
                   </Link>
                 </div>
                 <FormControl>
-                  <Input type="password" {...field} />
+                  <div className="relative">
+                    <Input 
+                      type={showPassword ? "text" : "password"}
+                      disabled={isLoading}
+                      className="pr-10"
+                      placeholder={tAuth('passwordPlaceholder')}
+                      {...field} 
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                      tabIndex={-1}
+                      aria-label={showPassword ? tAuth('hidePassword') : tAuth('showPassword')}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <span className="sr-only">
+                        {showPassword ? tAuth('hidePassword') : tAuth('showPassword')}
+                      </span>
+                    </Button>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full">
-            Login
+          
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {tAuth('loggingIn')}
+              </>
+            ) : (
+              tAuth('loginButton')
+            )}
           </Button>
         </form>
       </Form>

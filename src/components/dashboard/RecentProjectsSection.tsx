@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useRecentProjects } from '@/hooks/useRecentProjects';
 import { formatLastAccessed, formatMilestoneDate } from '@/utils/dateUtils';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -60,8 +61,22 @@ interface ProjectCardProps {
 }
 
 const ProjectCard = ({ project, compact = false, listView = false, onProjectClick }: ProjectCardProps) => {
+  const tDashboard = useTranslations('dashboard');
+  const tProjects = useTranslations('projects');
+  const tCommon = useTranslations('common');
+
   const handleClick = () => {
     onProjectClick(project.project_id);
+  };
+
+  // Get translated status
+  const getStatusText = (status: string) => {
+    switch(status) {
+      case 'Active': return tProjects('active');
+      case 'Archived': return tProjects('archived');
+      case 'Closed': return tProjects('closed');
+      default: return status;
+    }
   };
 
   if (listView) {
@@ -74,17 +89,19 @@ const ProjectCard = ({ project, compact = false, listView = false, onProjectClic
                 <div className="flex items-center space-x-2">
                   <h3 className="font-semibold text-gray-900">{project.project_name}</h3>
                   <Badge variant={project.project_status === 'Active' ? 'default' : 'secondary'}>
-                    {project.project_status}
+                    {getStatusText(project.project_status)}
                   </Badge>
                 </div>
                 <div className="flex items-center space-x-3 mt-1">
                   <p className="text-sm text-gray-500">
-                    {project.total_components} items • Last accessed {formatLastAccessed(project.last_accessed)}
+                    {project.total_components} {tDashboard('items')} • {tDashboard('lastAccessed')} {formatLastAccessed(project.last_accessed)}
                   </p>
                   {project.overdue_action_plans_count > 0 && (
                     <div className="flex items-center space-x-1">
                       <AlertTriangle className="h-4 w-4 text-black" />
-                      <span className="text-sm font-medium text-black">{project.overdue_action_plans_count} overdue</span>
+                      <span className="text-sm font-medium text-black">
+                        {project.overdue_action_plans_count} {tDashboard('overdue')}
+                      </span>
                     </div>
                   )}
                   {project.next_milestone_name && (
@@ -127,7 +144,7 @@ const ProjectCard = ({ project, compact = false, listView = false, onProjectClic
           <div className="flex-1 flex items-center space-x-2">
             {/* Badge spostato a sinistra del nome */}
             <Badge variant={project.project_status === 'Active' ? 'default' : 'secondary'}>
-              {project.project_status}
+              {getStatusText(project.project_status)}
             </Badge>
             <CardTitle className={cn("text-lg", compact && "text-base")}>
               {project.project_name}
@@ -135,11 +152,11 @@ const ProjectCard = ({ project, compact = false, listView = false, onProjectClic
           </div>
           {/* Pulsante Open spostato in alto a destra */}
           <Button size="sm" variant="outline">
-            Open <ExternalLink className="h-3 w-3 ml-1" />
+            {tCommon('open')} <ExternalLink className="h-3 w-3 ml-1" />
           </Button>
         </div>
         <p className="text-sm text-gray-500 mt-1">
-          Last accessed {formatLastAccessed(project.last_accessed)}
+          {tDashboard('lastAccessed')} {formatLastAccessed(project.last_accessed)}
         </p>
       </CardHeader>
       
@@ -147,11 +164,11 @@ const ProjectCard = ({ project, compact = false, listView = false, onProjectClic
         {/* Metrics con la prossima milestone */}
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-700">Items</p>
+            <p className="text-sm font-medium text-gray-700">{tDashboard('items')}</p>
             <p className="text-2xl font-bold text-black">{project.total_components}</p>
           </div>
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-700">Risks</p>
+            <p className="text-sm font-medium text-gray-700">{tDashboard('risks')}</p>
             <div className="flex items-center space-x-1">
               {project.overdue_action_plans_count > 0 ? (
                 <>
@@ -165,7 +182,7 @@ const ProjectCard = ({ project, compact = false, listView = false, onProjectClic
           </div>
           {/* Nuova sezione: Next Milestone */}
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-700">Next Milestone</p>
+            <p className="text-sm font-medium text-gray-700">{tDashboard('nextMilestone')}</p>
             {project.next_milestone_name ? (
               <div>
                 <div className="flex items-center space-x-1 mb-1">
@@ -178,7 +195,7 @@ const ProjectCard = ({ project, compact = false, listView = false, onProjectClic
               </div>
             ) : (
               <div className="flex items-center space-x-1">
-                <p className="text-sm text-gray-500">No milestone</p>
+                <p className="text-sm text-gray-500">{tDashboard('noMilestone')}</p>
               </div>
             )}
           </div>
@@ -187,7 +204,7 @@ const ProjectCard = ({ project, compact = false, listView = false, onProjectClic
         {/* Maturity Index */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-700">Maturity Index</p>
+            <p className="text-sm font-medium text-gray-700">{tDashboard('maturityIndex')}</p>
             <TrendingUp className="h-4 w-4 text-gray-400" />
           </div>
           <MaturityBar 
@@ -201,7 +218,7 @@ const ProjectCard = ({ project, compact = false, listView = false, onProjectClic
         {/* Project Team - sezione semplificata */}
         <div className="flex items-center justify-between pt-2">
           <div className="flex items-center space-x-2">
-            <p className="text-sm font-medium text-gray-700">Project Team</p>
+            <p className="text-sm font-medium text-gray-700">{tDashboard('projectTeam')}</p>
             <div className="flex -space-x-1">
               <Avatar className="h-6 w-6 border-2 border-white">
                 <AvatarFallback className="text-xs">SQ</AvatarFallback>
@@ -227,6 +244,12 @@ export default function RecentProjectsSection({ limit = 4, className }: RecentPr
   const { projects, isLoading, error, refetch, updateProjectAccess } = useRecentProjects(limit);
   const router = useRouter();
 
+  // Translations
+  const tDashboard = useTranslations('dashboard');
+  const tProjects = useTranslations('projects');
+  const tCommon = useTranslations('common');
+  const tMessages = useTranslations('messages');
+
   const handleProjectClick = async (projectId: number) => {
     console.log('🔗 Navigating to project:', projectId);
     
@@ -248,14 +271,16 @@ export default function RecentProjectsSection({ limit = 4, className }: RecentPr
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <FolderOpen className="h-5 w-5" />
-            <span>Recent Projects</span>
+            <span>{tDashboard('recentProjects')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center py-8">
-          <p className="text-destructive mb-4">Error loading recent projects: {error}</p>
+          <p className="text-destructive mb-4">
+            {tMessages('errorLoadingData')}: {error}
+          </p>
           <Button variant="outline" size="sm" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
+            {tCommon('retry')}
           </Button>
         </CardContent>
       </Card>
@@ -267,7 +292,7 @@ export default function RecentProjectsSection({ limit = 4, className }: RecentPr
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="flex items-center space-x-2">
           <FolderOpen className="h-5 w-5" />
-          <span>Recent Projects</span>
+          <span>{tDashboard('recentProjects')}</span>
         </CardTitle>
         <div className="flex items-center space-x-2">
           <Button
@@ -275,6 +300,7 @@ export default function RecentProjectsSection({ limit = 4, className }: RecentPr
             size="sm"
             onClick={() => setViewMode('grid')}
             disabled={isLoading}
+            aria-label={tDashboard('gridView')}
           >
             <Grid3X3 className="h-4 w-4" />
           </Button>
@@ -283,6 +309,7 @@ export default function RecentProjectsSection({ limit = 4, className }: RecentPr
             size="sm"
             onClick={() => setViewMode('list')}
             disabled={isLoading}
+            aria-label={tDashboard('listView')}
           >
             <List className="h-4 w-4" />
           </Button>
@@ -291,12 +318,13 @@ export default function RecentProjectsSection({ limit = 4, className }: RecentPr
             size="sm"
             onClick={handleRefresh}
             disabled={isLoading}
+            aria-label={tCommon('refresh')}
           >
             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </Button>
           <Link href="/project-selection">
             <Button variant="outline" size="sm">
-              View all
+              {tDashboard('viewAll')}
               <ArrowRight className="h-3 w-3 ml-1" />
             </Button>
           </Link>
@@ -333,12 +361,14 @@ export default function RecentProjectsSection({ limit = 4, className }: RecentPr
         ) : (
           <div className="text-center py-8">
             <FolderOpen className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 mb-2">No recent projects found</p>
-            <p className="text-sm text-gray-400 mb-4">Projects you access will appear here</p>
+            <p className="text-gray-500 mb-2">{tDashboard('noRecentProjects')}</p>
+            <p className="text-sm text-gray-400 mb-4">
+              {tDashboard('projectsAccessedHere')}
+            </p>
             <Link href="/project-selection">
               <Button variant="outline" size="sm">
                 <FolderOpen className="h-4 w-4 mr-2" />
-                Browse projects
+                {tDashboard('browseProjects')}
               </Button>
             </Link>
           </div>

@@ -4,12 +4,12 @@ import {
   BadgeCheck,
   Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
-  Sparkles,
   Settings,
+  Globe,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +21,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
@@ -30,16 +29,20 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from './ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { useTranslations } from 'next-intl';
 
 export function NavUser() {
   const { isMobile, isCollapsed } = useSidebar();
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  
+  // Organize translations by namespace
+  const tUser = useTranslations('user');
+  const tCommon = useTranslations('common');
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    // Usa un reindirizzamento completo per garantire la pulizia dello stato.
-    // Questa è la soluzione più robusta per evitare problemi di sincronizzazione.
     window.location.assign('/');
   };
 
@@ -70,16 +73,17 @@ export function NavUser() {
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="h-auto justify-center rounded-lg p-2"
-                  href="#"
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 rounded-lg"
+                  aria-label={tUser('userMenu')}
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user.avatar_url} alt={displayName} />
+                    <AvatarImage src={user.avatar_url} alt={displayName || tUser('userAvatar')} />
                     <AvatarFallback className="rounded-lg">{fallbackLetters.substring(0,1)}</AvatarFallback>
                   </Avatar>
-                </SidebarMenuButton>
+                </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent side="right" align="start">
@@ -99,7 +103,7 @@ export function NavUser() {
           <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar_url} alt={displayName} />
+                  <AvatarImage src={user.avatar_url} alt={displayName || tUser('userAvatar')} />
                   <AvatarFallback className="rounded-lg">{fallbackLetters}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
@@ -112,57 +116,61 @@ export function NavUser() {
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck className="mr-2 h-4 w-4" />
-                <span>Account</span>
+                <span>{tUser('account')}</span>
               </DropdownMenuItem>
-              {/*
-              <DropdownMenuItem>
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Billing</span>
-              </DropdownMenuItem>
-              */}
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+                <span>{tCommon('settings')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Bell className="mr-2 h-4 w-4" />
-                <span>Notifications</span>
+                <span>{tUser('notifications')}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center">
+                    <Globe className="mr-2 h-4 w-4" />
+                    <span>{tCommon('language')}</span>
+                  </div>
+                  <LanguageSwitcher size="icon" variant="ghost" showText={false} />
+                </div>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <span>{tCommon('logout')}</span>
             </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    )
+          </DropdownMenuContent>
+        </DropdownMenu>
+    );
   }
 
-  // Logica per la modalità espansa
+  // Modalità espansa
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
-              href="#"
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-auto p-2 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              aria-label={tUser('userMenu')}
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar_url} alt={displayName} />
+                <AvatarImage src={user.avatar_url} alt={displayName || tUser('userAvatar')} />
                 <AvatarFallback className="rounded-lg">{fallbackLetters}</AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{displayName}</span>
-                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+              <div className="grid flex-1 text-left text-sm leading-tight ml-2">
+                <span className="truncate font-semibold">{displayName}</span>
+                <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
-            </SidebarMenuButton>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56 rounded-lg"
+            className="w-56 rounded-lg"
             side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
@@ -170,7 +178,7 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar_url} alt={displayName} />
+                  <AvatarImage src={user.avatar_url} alt={displayName || tUser('userAvatar')} />
                   <AvatarFallback className="rounded-lg">{fallbackLetters}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
@@ -183,27 +191,31 @@ export function NavUser() {
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck className="mr-2 h-4 w-4" />
-                <span>Account</span>
+                <span>{tUser('account')}</span>
               </DropdownMenuItem>
-              {/*
-              <DropdownMenuItem>
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Billing</span>
-              </DropdownMenuItem>
-              */}
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+                <span>{tCommon('settings')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Bell className="mr-2 h-4 w-4" />
-                <span>Notifications</span>
+                <span>{tUser('notifications')}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center">
+                    <Globe className="mr-2 h-4 w-4" />
+                    <span>{tCommon('language')}</span>
+                  </div>
+                  <LanguageSwitcher size="icon" variant="ghost" showText={false} />
+                </div>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <span>{tCommon('logout')}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -4,10 +4,11 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 
-// Definiamo un tipo più ricco per il nostro utente, che includa il nome completo
+// Definiamo un tipo più ricco per il nostro utente, che includa il nome completo E la lingua preferita
 export interface UserProfile extends User {
   full_name?: string;
   avatar_url?: string;
+  preferred_language?: 'en' | 'it'; // ← AGGIUNTO!
 }
 
 interface AuthContextType {
@@ -33,10 +34,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (authUser) {
         try {
-          // 1. Recuperiamo il profilo dalla tabella 'users'
+          // 1. Recuperiamo il profilo dalla tabella 'users' (INCLUSA LA LINGUA!)
           const { data: profile, error: profileError } = await supabase
             .from('users')
-            .select('full_name')
+            .select('full_name, preferred_language') // ← AGGIUNTO preferred_language!
             .eq('id', authUser.id)
             .single();
 
@@ -65,11 +66,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           console.log('🔍 Ruoli utente:', userRoles);
+          console.log('🔍 Lingua preferita:', profile?.preferred_language); // ← AGGIUNTO LOG!
           
-          // 4. Creiamo l'oggetto utente arricchito
+          // 4. Creiamo l'oggetto utente arricchito (CON LA LINGUA!)
           const userWithProfile: UserProfile = {
             ...authUser,
             full_name: profile?.full_name,
+            // Fallback chain: DB preference → localStorage → 'en'
+            preferred_language: profile?.preferred_language || 
+                               (localStorage.getItem('preferred-language') as 'en' | 'it') || 
+                               'en',
           };
 
           setUser(userWithProfile);
@@ -77,7 +83,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         } catch (error) {
           console.error('Errore durante il setup auth:', error);
-          setUser(authUser as UserProfile);
+          // Anche nel fallback, includiamo la lingua di default con chain completa
+          setUser({
+            ...authUser,
+            preferred_language: (localStorage.getItem('preferred-language') as 'en' | 'it') || 'en' // ← AGGIUNTO fallback chain!
+          } as UserProfile);
           setRoles([]);
         }
       } else {

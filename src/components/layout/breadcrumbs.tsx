@@ -10,29 +10,85 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { useTranslations } from 'next-intl';
 import React from 'react';
 
 export function Breadcrumbs() {
   const pathname = usePathname();
-  const pathSegments = pathname.split('/').filter(Boolean); // Rimuove gli elementi vuoti
+  const tNavigation = useTranslations('navigation');
+  const tBreadcrumbs = useTranslations('breadcrumbs');
+  
+  // Rimuove la locale dal pathname se presente e filtra elementi vuoti
+  const pathSegments = pathname.split('/').filter(Boolean);
+  
+  // Se il primo segmento è una locale (en, it), rimuovilo
+  const cleanSegments = pathSegments[0] && ['en', 'it'].includes(pathSegments[0]) 
+    ? pathSegments.slice(1) 
+    : pathSegments;
 
   // Se siamo alla radice del layout (es. /dashboard), non mostrare nulla
-  if (pathSegments.length === 0) {
+  if (cleanSegments.length === 0) {
     return null;
   }
+
+  // Mappatura dei segmenti URL alle chiavi di traduzione
+  const getSegmentLabel = (segment: string): string => {
+    // Prima prova con le chiavi di navigazione specifiche
+    const navigationKey = segment.toLowerCase();
+    
+    // Mappa comuni segmenti URL alle chiavi di traduzione
+    switch (navigationKey) {
+      case 'dashboard':
+        return tNavigation('dashboard');
+      case 'projects':
+        return tNavigation('projects');
+      case 'components':
+        return tNavigation('components');
+      case 'analytics':
+        return tNavigation('analytics');
+      case 'admin':
+        return tNavigation('admin');
+      case 'users':
+        return tNavigation('users');
+      case 'roles':
+        return tNavigation('roles');
+      case 'evaluations':
+        return tNavigation('evaluations');
+      case 'reports':
+        return tNavigation('reports');
+      // Breadcrumbs specifici
+      case 'settings':
+        return tBreadcrumbs('settings');
+      case 'profile':
+        return tBreadcrumbs('profile');
+      case 'edit':
+        return tBreadcrumbs('edit');
+      case 'create':
+        return tBreadcrumbs('create');
+      case 'new':
+        return tBreadcrumbs('new');
+      case 'view':
+        return tBreadcrumbs('view');
+      case 'details':
+        return tBreadcrumbs('details');
+      default:
+        // Se non trova una traduzione specifica, capitalizza il segmento
+        return segment.charAt(0).toUpperCase() + segment.slice(1);
+    }
+  };
 
   return (
     <Breadcrumb className="hidden md:flex">
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/dashboard">{tNavigation('dashboard')}</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
-        {pathSegments.map((segment, index) => {
-          const href = `/${pathSegments.slice(0, index + 1).join('/')}`;
-          const isLast = index === pathSegments.length - 1;
-          const label = segment.charAt(0).toUpperCase() + segment.slice(1);
+        {cleanSegments.map((segment, index) => {
+          const href = `/${cleanSegments.slice(0, index + 1).join('/')}`;
+          const isLast = index === cleanSegments.length - 1;
+          const label = getSegmentLabel(segment);
 
           return (
             <React.Fragment key={href}>
@@ -53,9 +109,3 @@ export function Breadcrumbs() {
     </Breadcrumb>
   );
 }
-// Questo componente Breadcrumbs genera un percorso di navigazione basato sull'URL corrente.
-// Utilizza il percorso per creare un elenco di link che rappresentano la gerarchia delle pagine.
-// Ogni segmento del percorso è trasformato in un link, con l'ultimo segmento mostrato come pagina corrente senza link.
-// Il percorso inizia sempre con "Dashboard" e si adatta dinamicamente in base alla struttura dell'URL.
-// Il componente è visibile solo su schermi di dimensioni medie e superiori, grazie alla classe "hidden md:flex".
-// Utilizza il componente Breadcrumb di Shadcn per una presentazione visiva coerente e accessibile del percorso di navigazione.

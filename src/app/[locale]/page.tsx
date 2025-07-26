@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { UserAuthForm } from '@/components/auth/user-auth-form';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 // A simple SVG icon for the logo
 const GeoGrowthLogo = () => (
@@ -18,15 +19,29 @@ const GeoGrowthLogo = () => (
     </svg>
   );
 
-export default function LoginPage() {
+interface LoginPageProps {
+  params: Promise<{
+    locale: string;
+  }>;
+}
+
+export default async function LoginPage({ params }: LoginPageProps) {
+  const { locale } = await params;
+
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
       <div className="relative flex items-center justify-center py-12">
+        {/* Logo e Language Switcher */}
         <div className="absolute left-8 top-8">
-            <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
+            <Link href={`/${locale}`} className="flex items-center gap-2 text-lg font-semibold">
                 <GeoGrowthLogo />
                 <span>GeoGrowth Inc.</span>
             </Link>
+        </div>
+
+        {/* Language Switcher in alto a destra */}
+        <div className="absolute right-8 top-8">
+          <LanguageSwitcher size="icon" variant="ghost" showText={false} />
         </div>
 
         <div className="mx-auto grid w-[350px] gap-6">
@@ -41,7 +56,7 @@ export default function LoginPage() {
 
           <div className="mt-4 text-center text-sm">
             Need access?{' '}
-            <Link href="/request-invitation" className="underline">
+            <Link href={`/${locale}/request-invitation`} className="underline">
               Request an invitation
             </Link>
           </div>
