@@ -17,7 +17,7 @@ import {
 import { useI18n } from '@/contexts/I18nContext';
 import { Locale, locales } from '@/i18n/config';
 import { useTranslations } from 'next-intl';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 interface LanguageSwitcherProps {
@@ -47,6 +47,7 @@ export function LanguageSwitcher({
   const { locale, setLocale, isChangingLocale } = useI18n();
   const tCommon = useTranslations('common');
   const pathname = usePathname();
+  const router = useRouter();
 
   // Debug: vediamo cosa sta succedendo
   console.log('🔍 Language Switcher Debug:', {
@@ -57,7 +58,23 @@ export function LanguageSwitcher({
 
   const handleLanguageChange = async (newLocale: Locale) => {
     console.log('🔥 Language change requested:', newLocale, 'current:', locale);
+    
     if (newLocale !== locale && !isChangingLocale) {
+      // Costruisci il nuovo URL
+      let newPath = pathname;
+      
+      // Rimuovi la locale attuale dal path se presente
+      const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}/, '') || '/';
+      
+      // Aggiungi la nuova locale
+      newPath = `/${newLocale}${pathWithoutLocale}`;
+      
+      console.log('🚀 Navigating from', pathname, 'to', newPath);
+      
+      // Naviga direttamente al nuovo URL
+      router.push(newPath);
+      
+      // Aggiorna anche il context
       await setLocale(newLocale);
     }
   };

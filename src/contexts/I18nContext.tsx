@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/lib/supabaseClient';
@@ -20,11 +20,31 @@ interface I18nProviderProps {
 }
 
 export function I18nProvider({ children, initialLocale = defaultLocale }: I18nProviderProps) {
-  const [locale, setLocaleState] = useState<Locale>(initialLocale);
   const [isChangingLocale, setIsChangingLocale] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  
+  // Estrai la locale dal pathname
+  const getLocaleFromPathname = (): Locale => {
+    const segments = pathname.split('/');
+    const pathLocale = segments[1];
+    return locales.includes(pathLocale as Locale) ? (pathLocale as Locale) : defaultLocale;
+  };
+
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    // Inizializza la locale dal pathname se possibile, altrimenti usa initialLocale
+    return getLocaleFromPathname();
+  });
+
+  // Aggiorna la locale quando il pathname cambia
+  useEffect(() => {
+    const currentLocale = getLocaleFromPathname();
+    if (currentLocale !== locale) {
+      console.log('🔄 Updating locale from pathname:', currentLocale);
+      setLocaleState(currentLocale);
+    }
+  }, [pathname, locale]);
 
   const setLocale = async (newLocale: Locale) => {
     console.log('🌍 Changing language from', locale, 'to', newLocale);
@@ -90,6 +110,8 @@ export function I18nProvider({ children, initialLocale = defaultLocale }: I18nPr
     setLocale,
     isChangingLocale
   };
+
+  console.log('🔍 I18nContext state:', { locale, pathname, isChangingLocale });
 
   return (
     <I18nContext.Provider value={value}>

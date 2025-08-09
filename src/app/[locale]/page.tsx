@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { UserAuthForm } from '@/components/auth/user-auth-form';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { LanguageSwitcher } from '@/components/language-switcher';
 
 // A simple SVG icon for the logo
@@ -23,8 +23,17 @@ const GeoGrowthLogo = () => (
   );
 
 export default function LoginPage() {
+  // Test direct next-intl hooks
+  const locale = useLocale();
   const t = useTranslations('auth');
   const tCommon = useTranslations('common');
+
+  // Debug next-intl
+  console.log('🔍 NEXT-INTL DEBUG:', {
+    locale,
+    authLoginTitle: t('loginTitle'),
+    companyName: tCommon('companyName')
+  });
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
@@ -44,16 +53,16 @@ export default function LoginPage() {
           <div className="grid gap-2 text-center">
             <h1 className="text-3xl font-bold">{t('loginTitle')}</h1>
             <p className="text-balance text-muted-foreground">
-              Enter your credentials to access GeoGrowth
+              Current locale: {locale} | Company: {tCommon('companyName')}
             </p>
           </div>
           
           <UserAuthForm />
 
           <div className="mt-4 text-center text-sm">
-            Need access?{' '}
-            <Link href="/request-invitation" className="underline">
-              Request an invitation
+            {t('needAccess')}{' '}
+            <Link href={`/${locale}/request-invitation`} className="underline">
+              {t('requestInvitation')}
             </Link>
           </div>
         </div>

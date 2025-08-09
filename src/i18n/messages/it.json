@@ -16,7 +16,6 @@
     "name": "Nome",
     "description": "Descrizione",
     "settings": "Impostazioni",
-    "profile": "Profilo",
     "logout": "Disconnetti",
     "login": "Accedi",
     "email": "Email",
@@ -60,7 +59,9 @@
     "emailPlaceholder": "nome@esempio.com",
     "passwordPlaceholder": "Inserisci la tua password",
     "showPassword": "Mostra password",
-    "hidePassword": "Nascondi password"
+    "hidePassword": "Nascondi password",
+    "needAccess": "Serve un accesso?",
+    "requestInvitation": "Richiedi un invito"
   },
   "user": {
     "account": "Account",

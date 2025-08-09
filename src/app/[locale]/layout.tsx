@@ -4,6 +4,17 @@ import { NextIntlClientProvider } from 'next-intl';
 import { I18nProvider } from '@/contexts/I18nContext';
 import { locales, type Locale } from '@/i18n/config';
 import { notFound } from 'next/navigation';
+import { Geist, Geist_Mono } from "next/font/google";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 type Props = {
   children: React.ReactNode;
@@ -60,12 +71,12 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  // Ottieni i messaggi per questa locale
-  const messages = await getMessages();
+  // Ottieni i messaggi per questa locale specifica
+  const messages = await getMessages({ locale });
 
   return (
     <html lang={locale}>
-      <body>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <I18nProvider initialLocale={locale as Locale}>
             {children}

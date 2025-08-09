@@ -33,8 +33,7 @@
     "close": "Close",
     "back": "Back",
     "next": "Next",
-    "submit": "Submit",
-    "profile": "Profile"
+    "submit": "Submit"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -60,7 +59,9 @@
     "emailPlaceholder": "name@example.com",
     "passwordPlaceholder": "Enter your password",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "needAccess": "Need access?",
+    "requestInvitation": "Request an invitation"
   },
   "user": {
     "account": "Account",
