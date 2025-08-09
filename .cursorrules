@@ -1,0 +1,217 @@
+# GeoGrowth Platform - AI Assistant Rules
+
+## 🚨 CRITICAL PROJECT REQUIREMENTS
+
+### MULTILINGUAL SYSTEM (MANDATORY)
+This project uses a STRICT multilingual system with next-intl v4.3.4.
+- Supported languages: Italian (it) and English (en)
+- Default/fallback language: English (en)
+- Browser language auto-detection: ENABLED
+- URL structure: Always includes locale (/it/... or /en/...)
+
+#### ABSOLUTE RULES - NO EXCEPTIONS:
+1. **NEVER use hardcoded text strings** - Every user-visible text MUST use translations
+2. **ALWAYS use next-intl hooks** - useTranslations() for client, getTranslations() for server
+3. **NEVER create custom i18n solutions** - Only use next-intl
+4. **ALWAYS include locale in URLs** - Use `/${locale}/path` format
+5. **ALWAYS add translations to BOTH files** - en.json AND it.json
+
+#### Deprecated/Removed - DO NOT USE:
+- ❌ useI18n() - REMOVED, use useLocale() instead
+- ❌ I18nContext - REMOVED, use next-intl directly
+- ❌ I18nProvider - REMOVED, use NextIntlClientProvider
+
+## 📁 PROJECT STRUCTURE
+
+```
+src/
+  app/
+    [locale]/           # All pages MUST be under [locale]
+      layout.tsx        # Root layout with NextIntlClientProvider
+      page.tsx          # Login page
+      (app)/           # Protected routes with sidebar
+        dashboard/
+        components/
+        admin/
+  components/
+    ui/                # shadcn/ui components
+    auth/             # Authentication components
+    layout/           # Layout components (sidebar, breadcrumbs)
+  i18n/
+    config.ts         # i18n configuration
+    messages/
+      en.json         # English translations
+      it.json         # Italian translations
+  hooks/
+    useLanguage.tsx   # Custom hook for language switching
+  lib/
+    supabaseClient.ts # Supabase configuration
+```
+
+## 🛠 TECHNOLOGY STACK
+
+### Core:
+- **Framework**: Next.js 14+ (App Router)
+- **Language**: TypeScript (strict mode)
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Internationalization**: next-intl v4.3.4
+
+### Key Libraries:
+- React Hook Form + Zod (forms & validation)
+- Lucide React (icons)
+- Recharts (charts)
+- Date-fns (date handling)
+
+## 💻 CODE STANDARDS
+
+### Component Creation:
+
+#### Client Component Template:
+```tsx
+'use client';
+
+import { useTranslations, useLocale } from 'next-intl';
+
+export function ComponentName() {
+  const t = useTranslations('namespace');
+  const locale = useLocale();
+  
+  return (
+    <div>
+      <h1>{t('title')}</h1>
+      <Link href={`/${locale}/path`}>{t('link')}</Link>
+    </div>
+  );
+}
+```
+
+#### Server Component Template:
+```tsx
+import { getTranslations } from 'next-intl/server';
+
+interface PageProps {
+  params: Promise<{ locale: string }>;
+}
+
+export default async function PageName({ params }: PageProps) {
+  const { locale } = await params;
+  const t = await getTranslations('namespace');
+  
+  return <h1>{t('title')}</h1>;
+}
+```
+
+### Translation Files:
+Always update BOTH files when adding new strings:
+- `src/i18n/messages/en.json`
+- `src/i18n/messages/it.json`
+
+Structure:
+```json
+{
+  "namespace": {
+    "key": "Translation text",
+    "nested": {
+      "key": "Nested translation"
+    }
+  }
+}
+```
+
+## 🔒 SECURITY & PERMISSIONS
+
+### Row Level Security (RLS):
+- All database tables have RLS policies
+- User roles: Super User, Supplier Quality, Engineering, External User
+- Check user permissions before displaying features
+
+### Authentication Flow:
+1. User logs in via Supabase Auth
+2. User profile loaded from `users` table
+3. Roles fetched from `user_role_assignments`
+4. Redirect based on role (Admin → /admin, Others → /dashboard)
+5. Language preference saved in user profile
+
+## ⚠️ COMMON PITFALLS TO AVOID
+
+1. **Hardcoded strings** - Even button labels, placeholders, and error messages
+2. **Missing translations** - Always check both language files
+3. **Incorrect URL construction** - Always include locale
+4. **Mixing Server/Client components** incorrectly with translations
+5. **Using removed I18nContext** instead of next-intl hooks
+6. **Nested <a> tags** in navigation components
+7. **localStorage/sessionStorage** in artifacts - NOT supported
+
+## 🧪 TESTING CHECKLIST
+
+Before ANY commit:
+- [ ] No hardcoded text in code
+- [ ] Translations added to en.json
+- [ ] Translations added to it.json  
+- [ ] Links include `/${locale}/`
+- [ ] Form validation uses translations
+- [ ] Language switcher works
+- [ ] No console errors
+- [ ] Tested in both languages
+
+## 📝 GIT COMMIT FORMAT
+
+Use conventional commits:
+```
+feat: add new feature
+fix: resolve bug
+docs: update documentation
+style: formatting changes
+refactor: code restructuring
+test: add tests
+chore: maintenance tasks
+```
+
+## 🚀 DEVELOPMENT WORKFLOW
+
+1. Create feature in English first
+2. Add all strings to en.json
+3. Translate and add to it.json
+4. Test language switching
+5. Verify no hardcoded text
+6. Commit with clear message
+7. Push to feature branch
+8. Create PR with description
+
+## 📚 DOCUMENTATION
+
+Key files to reference:
+- `src/app/[locale]/page.tsx` - Login page example
+- `src/components/nav-main.tsx` - Navigation with translations
+- `src/hooks/useLanguage.tsx` - Language switching logic
+- `src/i18n/config.ts` - i18n configuration
+- `src/middleware.ts` - Routing middleware
+
+## 🆘 HELP COMMANDS
+
+```bash
+# Development
+npm run dev
+
+# Build
+npm run build
+
+# Find hardcoded strings
+grep -r "[\"\'].*[A-Z].*[\"\']" src/ --include="*.tsx" --include="*.ts"
+
+# Find useI18n usage (deprecated)
+grep -r "useI18n" src/
+
+# Check for missing translations
+# Compare keys between en.json and it.json manually
+```
+
+## 🎯 GOLDEN RULE
+
+> **"If you see hardcoded text, it's a bug!"**
+
+Every string visible to users MUST go through the translation system.
+NO EXCEPTIONS.
