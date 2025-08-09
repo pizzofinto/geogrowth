@@ -49,6 +49,7 @@ export default function GlobalDashboardPage() {
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const tMessages = useTranslations('messages');
+  const tErrors = useTranslations('errors');
   
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [timelines, setTimelines] = useState<ProjectWithTimeline[]>([]);
@@ -139,7 +140,7 @@ export default function GlobalDashboardPage() {
         ) : error.stats ? (
           <Card className="md:col-span-2 lg:col-span-3">
             <CardContent className="flex items-center justify-center h-28">
-              <p className="text-sm text-destructive">{tCommon('error')}: {error.stats}</p>
+              <p className="text-sm text-destructive">{tErrors('generic')}: {error.stats}</p>
             </CardContent>
           </Card>
         ) : (
@@ -168,7 +169,7 @@ export default function GlobalDashboardPage() {
       {/* Sezione Timeline */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>{t('projectTimeline')}</CardTitle>
+          <CardTitle>{t('projectProgress')}</CardTitle>
           <Select 
             value={String(timelineLimit)} 
             onValueChange={(value) => setTimelineLimit(Number(value))}
@@ -196,7 +197,7 @@ export default function GlobalDashboardPage() {
             </div>
           ) : error.timelines ? (
             <div className="flex items-center justify-center py-8">
-              <p className="text-sm text-destructive">{tCommon('error')}: {error.timelines}</p>
+              <p className="text-sm text-destructive">{tErrors('generic')}: {error.timelines}</p>
             </div>
           ) : timelines && timelines.length > 0 ? (
             <div className="space-y-6">

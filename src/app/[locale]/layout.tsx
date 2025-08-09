@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { getTranslations, getMessages } from 'next-intl/server';
+import { getTranslations } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
-import { I18nProvider } from '@/contexts/I18nContext';
 import { locales, type Locale } from '@/i18n/config';
 import { notFound } from 'next/navigation';
 import { Geist, Geist_Mono } from "next/font/google";
+import "@/app/globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -71,16 +71,19 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  // Ottieni i messaggi per questa locale specifica
-  const messages = await getMessages({ locale });
+  // IMPORTANTE: Importa i messaggi specifici per la locale corrente
+  let messages;
+  try {
+    messages = (await import(`@/i18n/messages/${locale}.json`)).default;
+  } catch (error) {
+    notFound();
+  }
 
   return (
     <html lang={locale}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <NextIntlClientProvider messages={messages}>
-          <I18nProvider initialLocale={locale as Locale}>
-            {children}
-          </I18nProvider>
+        <NextIntlClientProvider messages={messages} locale={locale}>
+          {children}
         </NextIntlClientProvider>
       </body>
     </html>

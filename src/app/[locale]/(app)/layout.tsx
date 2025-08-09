@@ -7,39 +7,42 @@ import {
 } from '@/components/ui/sidebar';
 import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 interface AppShellLayoutProps {
   children: React.ReactNode;
+  params: Promise<{
+    locale: string;
+  }>;
 }
 
-export default function AppShellLayout({
+export default async function AppShellLayout({
   children,
+  params,
 }: AppShellLayoutProps) {
+  const { locale } = await params;
+
   return (
-    // AuthProvider e I18nProvider sono già nel layout [locale]
-    // SidebarProvider gestisce lo stato compresso/espanso
-    <SidebarProvider>
-      {/* AppSidebar viene renderizzata qui */}
-      <AppSidebar />
-      {/* SidebarInset contiene tutto il resto della pagina */}
-      <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
-          <Breadcrumbs />
-          {/* Language Switcher nella header */}
-          <div className="ml-auto">
-            <LanguageSwitcher size="icon" />
+    <AuthProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-[orientation=vertical]:h-4"
+            />
+            <Breadcrumbs />
+            <div className="ml-auto">
+              <LanguageSwitcher size="icon" />
+            </div>
+          </header>
+          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+            {children}
           </div>
-        </header>
-        {/* Il contenuto specifico della pagina viene renderizzato qui */}
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          {children}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        </SidebarInset>
+      </SidebarProvider>
+    </AuthProvider>
   );
 }

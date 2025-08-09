@@ -14,10 +14,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useI18n } from '@/contexts/I18nContext';
+import { useLanguage } from '@/hooks/useLanguage';
 import { Locale, locales } from '@/i18n/config';
 import { useTranslations } from 'next-intl';
-import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 interface LanguageSwitcherProps {
@@ -27,7 +26,6 @@ interface LanguageSwitcherProps {
   className?: string;
 }
 
-// Language names remain constant (they should be in their native language)
 const languageNames: Record<Locale, string> = {
   en: 'English',
   it: 'Italiano',
@@ -44,37 +42,11 @@ export function LanguageSwitcher({
   showText = true,
   className 
 }: LanguageSwitcherProps) {
-  const { locale, setLocale, isChangingLocale } = useI18n();
+  const { locale, setLocale, isChangingLocale } = useLanguage();
   const tCommon = useTranslations('common');
-  const pathname = usePathname();
-  const router = useRouter();
-
-  // Debug: vediamo cosa sta succedendo
-  console.log('🔍 Language Switcher Debug:', {
-    locale,
-    pathname,
-    isChangingLocale
-  });
 
   const handleLanguageChange = async (newLocale: Locale) => {
-    console.log('🔥 Language change requested:', newLocale, 'current:', locale);
-    
     if (newLocale !== locale && !isChangingLocale) {
-      // Costruisci il nuovo URL
-      let newPath = pathname;
-      
-      // Rimuovi la locale attuale dal path se presente
-      const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}/, '') || '/';
-      
-      // Aggiungi la nuova locale
-      newPath = `/${newLocale}${pathWithoutLocale}`;
-      
-      console.log('🚀 Navigating from', pathname, 'to', newPath);
-      
-      // Naviga direttamente al nuovo URL
-      router.push(newPath);
-      
-      // Aggiorna anche il context
       await setLocale(newLocale);
     }
   };
@@ -101,7 +73,7 @@ export function LanguageSwitcher({
               </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>{tCommon('language')} (Current: {locale})</p>
+              <p>{tCommon('language')}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -132,26 +104,15 @@ export function LanguageSwitcher({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant={variant}
+        <Button 
+          variant={variant} 
           size={size}
           disabled={isChangingLocale}
-          className={cn('gap-2', className)}
-          aria-label={tCommon('changeLanguage')}
+          className={className}
         >
-          <div className="flex items-center gap-2">
-            <span 
-              className="text-base" 
-              role="img" 
-              aria-label={`${currentLanguage} flag`}
-            >
-              {currentFlag}
-            </span>
-            {showText && (
-              <span className="hidden sm:inline">{currentLanguage}</span>
-            )}
-          </div>
-          <ChevronDown className="h-4 w-4" />
+          <span className="text-base mr-2">{currentFlag}</span>
+          {showText && <span>{currentLanguage}</span>}
+          <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
@@ -163,17 +124,11 @@ export function LanguageSwitcher({
             disabled={isChangingLocale}
           >
             <div className="flex items-center gap-2">
-              <span 
-                className="text-base"
-                role="img" 
-                aria-label={`${languageNames[availableLocale]} flag`}
-              >
-                {languageFlags[availableLocale]}
-              </span>
+              <span className="text-base">{languageFlags[availableLocale]}</span>
               <span>{languageNames[availableLocale]}</span>
             </div>
             {locale === availableLocale && (
-              <Check className="h-4 w-4" aria-label={tCommon('currentLanguage')} />
+              <Check className="h-4 w-4" />
             )}
           </DropdownMenuItem>
         ))}

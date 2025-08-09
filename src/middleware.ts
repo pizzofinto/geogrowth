@@ -2,23 +2,23 @@ import createMiddleware from 'next-intl/middleware';
 import { locales, defaultLocale } from './i18n/config';
 
 export default createMiddleware({
-  // Lista di tutte le locali supportate
   locales,
-  
-  // Locale di default
   defaultLocale,
-  
-  // Usa sempre il prefisso locale nell'URL
+  // ABILITA la detection automatica della lingua del browser
+  localeDetection: true,
+  // Always show locale in URL
   localePrefix: 'always'
 });
 
 export const config = {
-  // Abbina tutti i percorsi tranne i file statici
+  // Matcher per tutte le route tranne quelle che iniziano con:
+  // - _next (Next.js internals)
+  // - _vercel (Vercel internals)
+  // - api (API routes)
+  // - file statici (immagini, font, etc.)
   matcher: [
-    // Abilita un reindirizzamento a una locale corrispondente alla radice
     '/',
-    
-    // Abbina tutti i percorsi internazionalizzati
-    '/(it|en)/:path*'
+    '/(it|en)/:path*',
+    '/((?!_next|_vercel|.*\\..*).*)'
   ]
 };

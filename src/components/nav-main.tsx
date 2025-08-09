@@ -19,11 +19,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
-import { useI18n } from '@/contexts/I18nContext';
+import { useTranslations, useLocale } from 'next-intl';
 
 type NavItem = {
-  labelKey: string; // Chiave di traduzione che corrisponde ai tuoi file
+  labelKey: string;
   href: string;
   icon: LucideIcon;
   requiredRoles: string[];
@@ -32,19 +31,19 @@ type NavItem = {
 
 const allNavItems: NavItem[] = [
   { 
-    labelKey: 'dashboard', // navigation.dashboard nei tuoi file
+    labelKey: 'dashboard',
     href: '/dashboard', 
     icon: Home, 
     requiredRoles: ['Super User', 'Supplier Quality', 'Engineering', 'External User'] 
   },
   { 
-    labelKey: 'components', // navigation.components nei tuoi file
+    labelKey: 'components',
     href: '/components', 
     icon: Package, 
     requiredRoles: ['Super User', 'Supplier Quality', 'Engineering', 'External User'] 
   },
   { 
-    labelKey: 'admin', // navigation.admin nei tuoi file
+    labelKey: 'admin',
     href: '#',
     icon: Users, 
     requiredRoles: ['Super User'],
@@ -54,7 +53,7 @@ const allNavItems: NavItem[] = [
     ]
   },
   { 
-    labelKey: 'analytics', // navigation.analytics nei tuoi file
+    labelKey: 'analytics',
     href: '/analytics', 
     icon: LineChart, 
     requiredRoles: ['Super User', 'Supplier Quality'] 
@@ -65,9 +64,8 @@ export function NavMain() {
   const pathname = usePathname();
   const { roles, isLoading } = useAuth();
   const { isCollapsed } = useSidebar();
-  const { locale } = useI18n();
+  const locale = useLocale();
   
-  // Hook per traduzioni di next-intl con namespace navigation
   const t = useTranslations('navigation');
 
   const navItems = allNavItems.filter(item => 
@@ -84,13 +82,12 @@ export function NavMain() {
     );
   }
 
-  // Funzione helper per costruire URL con locale
   const buildHref = (href: string) => {
     if (href === '#') return href;
     return `/${locale}${href}`;
   };
 
-  // Logica di rendering per la modalità compressa
+  // Modalità compressa (icone solo)
   if (isCollapsed) {
     return (
       <TooltipProvider>
@@ -120,7 +117,7 @@ export function NavMain() {
     );
   }
 
-  // Logica di rendering per la modalità espansa
+  // Modalità espansa
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{t('platform')}</SidebarGroupLabel>
@@ -131,12 +128,13 @@ export function NavMain() {
           return (
             <SidebarMenuItem key={item.labelKey}>
               {item.items ? (
+                // Item con sottomenu (collapsible)
                 <Collapsible defaultOpen={isActive}>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton href={buildHref(item.href)}>
-                      <item.icon className="mr-2 h-4 w-4" />
+                    <SidebarMenuButton href="#">
+                      <item.icon className="h-4 w-4" />
                       <span>{t(item.labelKey)}</span>
-                      <ChevronRight className="ml-auto h-4 w-4 transition-transform data-[state=open]:rotate-90" />
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -149,7 +147,7 @@ export function NavMain() {
                               href={buildHref(subItem.href)}
                               className={cn(isSubActive && "bg-accent text-accent-foreground")}
                             >
-                              <subItem.icon className="mr-2 h-3 w-3" />
+                              <subItem.icon className="h-3 w-3" />
                               <span>{t(subItem.labelKey)}</span>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
@@ -159,16 +157,13 @@ export function NavMain() {
                   </CollapsibleContent>
                 </Collapsible>
               ) : (
-                <SidebarMenuButton href={''}>
-                  <Link 
-                    href={buildHref(item.href)}
-                    className={cn(
-                      isActive && "bg-accent text-accent-foreground"
-                    )}
-                  >
-                    <item.icon className="mr-2 h-4 w-4" />
-                    <span>{t(item.labelKey)}</span>
-                  </Link>
+                // Item singolo senza sottomenu - usa direttamente SidebarMenuButton con href
+                <SidebarMenuButton 
+                  href={buildHref(item.href)}
+                  className={cn(isActive && "bg-accent text-accent-foreground")}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span>{t(item.labelKey)}</span>
                 </SidebarMenuButton>
               )}
             </SidebarMenuItem>
