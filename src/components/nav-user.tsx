@@ -7,6 +7,8 @@ import {
   LogOut,
   Settings,
   Globe,
+  Languages,
+  LanguagesIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -30,20 +32,21 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from './ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 export function NavUser() {
   const { isMobile, isCollapsed } = useSidebar();
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  
+  const locale = useLocale();
+
   // Organize translations by namespace
   const tUser = useTranslations('user');
   const tCommon = useTranslations('common');
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.assign('/');
+    window.location.assign(`/${locale}`);
   };
 
   if (isLoading) {
@@ -130,7 +133,7 @@ export function NavUser() {
               <DropdownMenuItem asChild>
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center">
-                    <Globe className="mr-2 h-4 w-4" />
+                    <Languages className="mr-2 h-4 w-4" />
                     <span>{tCommon('language')}</span>
                   </div>
                   <LanguageSwitcher size="icon" variant="ghost" showText={false} />
@@ -205,7 +208,7 @@ export function NavUser() {
               <DropdownMenuItem asChild>
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center">
-                    <Globe className="mr-2 h-4 w-4" />
+                    <Languages className="mr-2 h-4 w-4" />
                     <span>{tCommon('language')}</span>
                   </div>
                   <LanguageSwitcher size="icon" variant="ghost" showText={false} />
