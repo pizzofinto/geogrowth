@@ -6,9 +6,7 @@ import {
   ChevronsUpDown,
   LogOut,
   Settings,
-  Globe,
   Languages,
-  LanguagesIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -46,7 +44,9 @@ export function NavUser() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.assign(`/${locale}`);
+    //window.location.assign(`/${locale}`);
+    router.push(`/${locale}`);
+    router.refresh();
   };
 
   if (isLoading) {

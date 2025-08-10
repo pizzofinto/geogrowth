@@ -50,7 +50,7 @@
   },
   "auth": {
     "loginTitle": "Accedi al tuo account",
-    "loginSubtitle": "Inserisci le tue credenziali per accedere a GeoGrowth",
+    "loginSubtitle": "Inserisci le tue credenziali per accedere",
     "forgotPassword": "Password dimenticata?",
     "loginButton": "Accedi",
     "invalidCredentials": "Email o password non validi",
