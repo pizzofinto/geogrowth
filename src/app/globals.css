@@ -78,7 +78,13 @@
   --sidebar-ring: oklch(0.704 0.04 256.788);
   --destructive: 0 84.2% 60.2%;   /* Rosso standard */
   --success: 142.1 76.2% 36.3%; /* Verde scuro per OTOP */
-  --ot-color: 130 50% 60%;      /* Verde chiaro per OT */
+  /* Maturity Index Colors - Light Mode */
+    --maturity-otop: 96 60% 52%;      /* rgb(120, 200, 65) -> Verde scuro */
+    --maturity-ot: 74 89% 47%;        /* rgb(180, 229, 13) -> Verde lime */
+    --maturity-incomplete: 26 100% 59%; /* rgb(255, 155, 47) -> Arancione */
+    --maturity-ko: 0 96% 62%;         /* rgb(251, 65, 65) -> Rosso */
+    --maturity-new: 203 78% 70%;      /* rgb(119, 190, 240) -> Blu chiaro */
+    --maturity-not-off-tool: 0 0% 45%; /* Grigio medio */
 }
 
 .dark {
@@ -115,7 +121,13 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
   --destructive: 0 62.8% 30.6%;  /* Rosso scuro */
   --success: 142.1 70.6% 45.3%;  /* Verde standard per OTOP */
-  --ot-color: 130 40% 50%;       /* Verde chiaro per OT (versione scura) */
+  /* Maturity Index Colors - Dark Mode (leggermente più saturi/luminosi) */
+    --maturity-otop: 96 65% 45%;      /* Verde scuro - meno luminoso per dark */
+    --maturity-ot: 74 85% 55%;        /* Verde lime - più luminoso per contrasto */
+    --maturity-incomplete: 26 95% 55%; /* Arancione - leggermente meno saturo */
+    --maturity-ko: 0 90% 58%;         /* Rosso - leggermente meno intenso */
+    --maturity-new: 203 70% 65%;      /* Blu - meno saturo per dark mode */
+    --maturity-not-off-tool: 0 0% 60%; /* Grigio più chiaro per visibilità */
 }
 
 @layer base {

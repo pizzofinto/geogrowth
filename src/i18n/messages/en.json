@@ -187,6 +187,27 @@
     "help": "Help",
     "about": "About"
   },
+  "maturityIndex": {
+    "title": "Maturity Index",
+    "description": "The maturity index represents the overall compliance status of project components",
+    "breakdown": "Status Breakdown",
+    "otopDescription": "OTOP - Off Tool Off Process",
+    "otDescription": "OT - Off Tool",
+    "koDescription": "Non-compliant",
+    "new": "New",
+    "incomplete": "Incomplete Data",
+    "notOffTool": "Not Off Tool",
+    "otherStatuses": "Other Statuses",
+    "lastUpdated": "Last updated",
+    "trend": "Trend",
+    "improving": "Improving",
+    "declining": "Declining",
+    "stable": "Stable",
+    "otopFullName": "Off Tool Off Process",
+    "otFullName": "Off Tool",
+    "otopDefinition": "Components compliant in dimensions with stable and capable series production process (Cp/Cpk ≥ 1.33).",
+    "otDefinition": "Components compliant in dimensions, not from series production process. Production process stability not yet verified."
+  },
   "meta": {
     "companyName": "GeoGrowth Inc.",
     "appName": "GeoGrowth Platform",

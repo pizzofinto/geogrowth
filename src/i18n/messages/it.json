@@ -187,6 +187,27 @@
   "help": "Aiuto",
   "about": "Informazioni"
   },
+  "maturityIndex": {
+    "title": "Maturity Index",
+    "description": "L'indice di maturità rappresenta lo stato complessivo di conformità dei componenti del progetto",
+    "breakdown": "Dettaglio Stati",
+    "otopDescription": "OTOP - Off Tool Off Process",
+    "otDescription": "OT - Off Tool",
+    "koDescription": "Non conforme",
+    "new": "Nuovo",
+    "incomplete": "Dati Incompleti",
+    "notOffTool": "Not Off Tool",
+    "otherStatuses": "Altri Stati",
+    "lastUpdated": "Ultimo aggiornamento",
+    "trend": "Trend",
+    "improving": "In miglioramento",
+    "declining": "In peggioramento",
+    "stable": "Stabile",
+    "otopFullName": "Off Tool Off Process",
+    "otFullName": "Off Tool",
+    "otopDefinition": "Componenti conformi al disegno per dimensioni e con processo produttivo di serie, stabile e capace (Cp/Cpk ≥ 1.33).",
+    "otDefinition": "Componenti conformi al disegno per dimensioni con processo produttivo non di serie. La stabilità del processo produttivo non è ancora verificata."
+  },
   "meta": {
     "companyName": "GeoGrowth Inc.",
     "appName": "GeoGrowth Platform",
