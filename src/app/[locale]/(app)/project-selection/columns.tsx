@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowUpDown, FilePenLine, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { StackedProgressBar } from './stacked-progress-bar';
+import { MaturityIndex, MaturityIndexData } from '@/components/shared/MaturityIndex';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +23,11 @@ export type Project = {
   overdue_action_plans_count: number | null;
   next_milestone_name: string | null;
   next_milestone_date: string | null;
+  last_accessed?: string;
+  // Aggiungi se disponibili:
+  // new_percentage?: number;
+  // incomplete_percentage?: number;
+  // not_off_tool_percentage?: number;
 };
 
 // Funzione helper per calcolare il tempo rimanente
@@ -132,18 +137,33 @@ export const columns: ColumnDef<Project>[] = [
       );
     },
   },
+
   // Colonna: Maturity Index
   {
     id: 'maturity_index',
     header: () => <div className="font-medium">Maturity Index</div>,
     cell: ({ row }) => {
       const project = row.original;
+      
+      // Prepara i dati per il componente MaturityIndex
+      const maturityData: MaturityIndexData = {
+        otop: project.otop_percentage ?? 0,
+        ot: project.ot_percentage ?? 0,
+        ko: project.ko_percentage ?? 0,
+        // Aggiungi altri stati se disponibili nel database
+        // new: project.new_percentage,
+        // incomplete: project.incomplete_percentage,
+        // notOffTool: project.not_off_tool_percentage,
+      };
+
       return (
-        <div className="w-32">
-          <StackedProgressBar
-            otop={project.otop_percentage ?? 0}
-            ot={project.ot_percentage ?? 0}
-            ko={project.ko_percentage ?? 0}
+        <div className="w-48">
+          <MaturityIndex 
+            data={maturityData}
+            variant="compact"
+            showLabels={true}
+            showTrend={false}
+            hideTitle={true}
           />
         </div>
       );

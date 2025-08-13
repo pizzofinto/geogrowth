@@ -33,7 +33,10 @@
     "close": "Chiudi",
     "back": "Indietro",
     "next": "Avanti",
-    "submit": "Invia"
+    "submit": "Invia",
+    "active": "Attivo",
+    "archived": "Archiviato", 
+    "closed": "Chiuso"
   },
   "navigation": {
     "dashboard": "Dashboard",

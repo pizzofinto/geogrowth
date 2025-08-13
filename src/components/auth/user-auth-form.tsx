@@ -80,12 +80,14 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
       if (signInError) {
         console.error('❌ Login Error:', signInError);
         setError(tAuth('invalidCredentials'));
+        setIsLoading(false);
         return;
       }
 
       if (!signInData.user) {
         // Controllo di sicurezza nel caso in cui l'utente non venga restituito
         setError(tAuth('loginError'));
+        setIsLoading(false);
         return;
       }
 

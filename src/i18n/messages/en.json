@@ -33,7 +33,10 @@
     "close": "Close",
     "back": "Back",
     "next": "Next",
-    "submit": "Submit"
+    "submit": "Submit",
+    "active": "Active",
+    "archived": "Archived",
+    "closed": "Closed"
   },
   "navigation": {
     "dashboard": "Dashboard",

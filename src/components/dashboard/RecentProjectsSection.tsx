@@ -22,13 +22,15 @@ import { useRecentProjects } from '@/hooks/useRecentProjects';
 import { formatLastAccessed, formatMilestoneDate } from '@/utils/dateUtils';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'
+import { MaturityIndex, MaturityIndexData }  from '@/components/shared/MaturityIndex';
+import { cn } from '@/lib/utils';
 
-// Utility function for conditional class names
+{/* Utility function for conditional class names
 const cn = (...classes: (string | undefined | null | false)[]) => 
-  classes.filter(Boolean).join(' ');
+  classes.filter(Boolean).join(' ');*/}
 
-// MaturityBar component with OTOP/OT/KO colors and percentages below
+{/*/ MaturityBar component with OTOP/OT/KO colors and percentages below
 const MaturityBar = ({ otop, ot, ko, showPercentages = true }: { 
   otop: number; 
   ot: number; 
@@ -51,7 +53,7 @@ const MaturityBar = ({ otop, ot, ko, showPercentages = true }: {
       </div>
     )}
   </div>
-);
+); */}
 
 interface ProjectCardProps {
   project: any;
@@ -60,76 +62,84 @@ interface ProjectCardProps {
   onProjectClick: (projectId: number) => void;
 }
 
-const ProjectCard = ({ project, compact = false, listView = false, onProjectClick }: ProjectCardProps) => {
+// Card per singolo progetto con MaturityIndex integrato
+const ProjectCard: React.FC<ProjectCardProps> = ({ 
+  project, 
+  compact = false,
+  listView = false,
+  onProjectClick 
+  }) => {
   const tDashboard = useTranslations('dashboard');
-  const tProjects = useTranslations('projects');
   const tCommon = useTranslations('common');
 
-  const handleClick = () => {
-    onProjectClick(project.project_id);
+  // Prepara i dati per il MaturityIndex
+  const maturityData: MaturityIndexData = {
+    otop: project.otop_percentage ?? 0,
+    ot: project.ot_percentage ?? 0,
+    ko: project.ko_percentage ?? 0,
+    lastUpdated: project.last_accessed ? new Date(project.last_accessed) : undefined,
   };
 
-  // Get translated status
   const getStatusText = (status: string) => {
-    switch(status) {
-      case 'Active': return tProjects('active');
-      case 'Archived': return tProjects('archived');
-      case 'Closed': return tProjects('closed');
+    switch (status) {
+      case 'Active': return tCommon('active');
+      case 'Archived': return tCommon('archived');
+      case 'Closed': return tCommon('closed');
       default: return status;
     }
   };
 
+  const handleClick = () => {
+    if (onProjectClick) {
+      console.log('Clicking project:', project.project_id);  // Aggiungi log
+      onProjectClick(project.id);
+    }
+  };
+
+  // Vista Lista
   if (listView) {
     return (
       <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={handleClick}>
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4 flex-1">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-semibold text-gray-900">{project.project_name}</h3>
-                  <Badge variant={project.project_status === 'Active' ? 'default' : 'secondary'}>
-                    {getStatusText(project.project_status)}
-                  </Badge>
-                </div>
-                <div className="flex items-center space-x-3 mt-1">
-                  <p className="text-sm text-gray-500">
-                    {project.total_components} {tDashboard('items')} • {tDashboard('lastAccessed')} {formatLastAccessed(project.last_accessed)}
-                  </p>
-                  {project.overdue_action_plans_count > 0 && (
-                    <div className="flex items-center space-x-1">
-                      <AlertTriangle className="h-4 w-4 text-black" />
-                      <span className="text-sm font-medium text-black">
-                        {project.overdue_action_plans_count} {tDashboard('overdue')}
-                      </span>
-                    </div>
-                  )}
-                  {project.next_milestone_name && (
-                    <div className="flex items-center space-x-1 text-xs text-blue-600">
-                      <Calendar className="h-3 w-3" />
-                      <span>{project.next_milestone_name}</span>
-                      {project.next_milestone_date && (
-                        <span>({formatMilestoneDate(project.next_milestone_date)})</span>
-                      )}
-                    </div>
-                  )}
-                </div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant={project.project_status === 'Active' ? 'default' : 'secondary'} className="text-xs">
+                  {getStatusText(project.project_status)}
+                </Badge>
+                <h3 className="font-semibold text-base truncate">{project.project_name}</h3>
               </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="w-24">
-                  <MaturityBar 
-                    otop={project.otop_percentage} 
-                    ot={project.ot_percentage} 
-                    ko={project.ko_percentage}
-                    showPercentages={false}
-                  />
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                {tDashboard('lastAccessed')} {formatLastAccessed(project.last_accessed)}
+              </p>
             </div>
             
-            <Button size="sm" variant="outline">
-              <ChevronRight className="h-4 w-4" />
+            {/* MaturityIndex nella versione lista */}
+            <div className="hidden sm:block w-32 md:w-40">
+              <MaturityIndex 
+                data={maturityData}
+                variant="minimal"
+              />
+            </div>
+
+            <div className="flex items-center gap-4 text-sm">
+              <div className="text-center">
+                <p className="font-semibold">{project.total_components}</p>
+                <p className="text-xs text-muted-foreground">{tDashboard('items')}</p>
+              </div>
+              {project.overdue_action_plans_count > 0 && (
+                <div className="text-center">
+                  <div className="flex items-center gap-1">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <span className="font-semibold text-amber-600">{project.overdue_action_plans_count}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{tDashboard('risks')}</p>
+                </div>
+              )}
+            </div>
+
+            <Button size="sm" variant="ghost" className="ml-2" onClick={(e) => { e.stopPropagation(); }}>
+              <ExternalLink className="h-4 w-4" />
             </Button>
           </div>
         </CardContent>
@@ -137,96 +147,97 @@ const ProjectCard = ({ project, compact = false, listView = false, onProjectClic
     );
   }
 
+  // Vista Card (grid)
   return (
-    <Card className="hover:shadow-lg transition-shadow cursor-pointer group" onClick={handleClick}>
+    <Card className={cn("hover:shadow-lg transition-shadow cursor-pointer", compact && "h-full")} onClick={handleClick}>
       <CardHeader className={cn("pb-3", compact && "pb-2")}>
-        <div className="flex items-start justify-between">
-          <div className="flex-1 flex items-center space-x-2">
-            {/* Badge spostato a sinistra del nome */}
-            <Badge variant={project.project_status === 'Active' ? 'default' : 'secondary'}>
+        <div className="flex flex-col gap-2">
+          {/* Prima riga: Badge status e pulsante */}
+          <div className="flex items-center justify-between gap-2">
+            <Badge variant={project.project_status === 'Active' ? 'default' : 'secondary'} className="shrink-0">
               {getStatusText(project.project_status)}
             </Badge>
-            <CardTitle className={cn("text-lg", compact && "text-base")}>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={(e) => { e.stopPropagation(); }} 
+              className="shrink-0 min-w-0"
+            >
+              <span className="hidden md:inline">{tCommon('open')}</span>
+              <ExternalLink className="h-3 w-3 md:ml-1" />
+            </Button>
+          </div>
+          
+          {/* Seconda riga: Nome progetto */}
+          <div className="min-w-0 flex-1">
+            <CardTitle className={cn("text-lg truncate leading-tight", compact && "text-base")} title={project.project_name}>
               {project.project_name}
             </CardTitle>
           </div>
-          {/* Pulsante Open spostato in alto a destra */}
-          <Button size="sm" variant="outline">
-            {tCommon('open')} <ExternalLink className="h-3 w-3 ml-1" />
-          </Button>
         </div>
-        <p className="text-sm text-gray-500 mt-1">
+        {/* Data ultimo accesso */}
+        <p className="text-sm text-muted-foreground mt-2">
           {tDashboard('lastAccessed')} {formatLastAccessed(project.last_accessed)}
         </p>
       </CardHeader>
-      
+
       <CardContent className={cn("space-y-4", compact && "space-y-3")}>
+      {/* Maturity Index integrato - Responsive */}
+        <div>
+          {/* Desktop: Compact with labels */}
+          <div className="hidden sm:block">
+            <MaturityIndex 
+              data={maturityData}
+              variant="compact"
+              showLabels={true}
+              showTrend={false}
+              hideTitle={false}
+            />
+          </div>
+          
+          {/* Mobile: Minimal badge style */}
+          <div className="block sm:hidden">
+            <MaturityIndex 
+              data={maturityData}
+              variant="minimal"
+              hideTitle={false}  // Mostra il badge style
+            />
+          </div>
+        </div>
+
         {/* Metrics con la prossima milestone */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-700">{tDashboard('items')}</p>
-            <p className="text-2xl font-bold text-black">{project.total_components}</p>
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground">{tDashboard('items')}</p>
+            <p className="text-xl sm:text-2xl font-bold">{project.total_components}</p>
           </div>
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-700">{tDashboard('risks')}</p>
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground">{tDashboard('risks')}</p>
             <div className="flex items-center space-x-1">
               {project.overdue_action_plans_count > 0 ? (
                 <>
-                  <AlertTriangle className="h-4 w-4 text-black" />
-                  <span className="text-2xl font-bold text-black">{project.overdue_action_plans_count}</span>
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600" />
+                  <span className="text-xl sm:text-2xl font-bold text-amber-600">{project.overdue_action_plans_count}</span>
                 </>
               ) : (
-                <span className="text-2xl font-bold text-black">0</span>
+                <span className="text-xl sm:text-2xl font-bold text-green-600">0</span>
               )}
             </div>
           </div>
-          {/* Nuova sezione: Next Milestone */}
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-700">{tDashboard('nextMilestone')}</p>
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground">{tDashboard('nextMilestone')}</p>
             {project.next_milestone_name ? (
               <div>
-                <div className="flex items-center space-x-1 mb-1">
-                  <Calendar className="h-4 w-4 text-black" />
-                  <p className="text-sm font-bold text-black">{project.next_milestone_name}</p>
-                </div>
+                <p className="text-xs sm:text-sm font-semibold truncate">{project.next_milestone_name}</p>
                 {project.next_milestone_date && (
-                  <p className="text-xs text-gray-500">{formatMilestoneDate(project.next_milestone_date)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatMilestoneDate(project.next_milestone_date)}
+                  </p>
                 )}
               </div>
             ) : (
-              <div className="flex items-center space-x-1">
-                <p className="text-sm text-gray-500">{tDashboard('noMilestone')}</p>
-              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">{tDashboard('noMilestone')}</p>
             )}
-          </div>
-        </div>
-
-        {/* Maturity Index */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-700">{tDashboard('maturityIndex')}</p>
-            <TrendingUp className="h-4 w-4 text-gray-400" />
-          </div>
-          <MaturityBar 
-            otop={project.otop_percentage} 
-            ot={project.ot_percentage} 
-            ko={project.ko_percentage}
-            showPercentages={true}
-          />
-        </div>
-
-        {/* Project Team - sezione semplificata */}
-        <div className="flex items-center justify-between pt-2">
-          <div className="flex items-center space-x-2">
-            <p className="text-sm font-medium text-gray-700">{tDashboard('projectTeam')}</p>
-            <div className="flex -space-x-1">
-              <Avatar className="h-6 w-6 border-2 border-white">
-                <AvatarFallback className="text-xs">SQ</AvatarFallback>
-              </Avatar>
-              <Avatar className="h-6 w-6 border-2 border-white">
-                <AvatarFallback className="text-xs">ENG</AvatarFallback>
-              </Avatar>
-            </div>
           </div>
         </div>
       </CardContent>
