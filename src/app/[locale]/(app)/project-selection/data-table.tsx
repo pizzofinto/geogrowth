@@ -31,6 +31,7 @@ interface DataTableProps<TData, TValue> {
   setStatusFilter: (value: string) => void;
   searchTerm: string;
   setSearchTerm: (value: string) => void;
+  t: any;
 }
 
 export function DataTable<TData, TValue>({
@@ -41,6 +42,7 @@ export function DataTable<TData, TValue>({
   setStatusFilter,
   searchTerm,
   setSearchTerm,
+  t,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'next_milestone_date', desc: false },
@@ -70,6 +72,7 @@ export function DataTable<TData, TValue>({
         setStatusFilter={setStatusFilter}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        t={t}
       />
       <div className="rounded-md border">
         <Table>
@@ -108,7 +111,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {t('noResults')}
                 </TableCell>
               </TableRow>
             )}
@@ -122,7 +125,7 @@ export function DataTable<TData, TValue>({
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
         >
-          Previous
+          {t('previous')}
         </Button>
         <Button
           variant="outline"
@@ -130,7 +133,7 @@ export function DataTable<TData, TValue>({
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
-          Next
+          {t('next')}
         </Button>
       </div>
     </div>

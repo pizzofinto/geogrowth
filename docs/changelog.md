@@ -1,0 +1,183 @@
+# 📝 CHANGELOG - GeoGrowth Platform
+
+Tutte le modifiche importanti del progetto sono documentate in questo file.
+
+Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/),
+e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased] - Sprint Corrente
+
+### 🎯 Target Release: v1.0.0-beta.1
+### 📅 Sprint End: [Data Fine Sprint]
+
+### ✨ Added
+- Dashboard con KPI cards dinamiche
+- Sistema di autenticazione completo con Supabase Auth
+- Supporto multilingua (IT/EN) con next-intl
+- Sidebar navigation responsiva
+- Breadcrumbs dinamici con traduzioni
+- Language switcher persistente
+- Recent projects section
+- Database schema completo (20+ tabelle)
+- Row Level Security policies
+- Stored procedures per calcoli automatici
+
+### 🔄 Changed
+- Migrazione da Pages Router a App Router (Next.js 14)
+- Refactor completo sistema i18n (da custom a next-intl)
+
+### 🐛 Fixed
+- Risolto problema persistenza lingua dopo refresh
+- Corretto overlap menu mobile su schermi piccoli
+- Fix traduzioni breadcrumbs
+
+### 🚧 Work in Progress
+- [ ] Completamento KPI cards con dati reali
+- [ ] Maturity index chart component
+- [ ] Action plan alerts system
+- [ ] Project CRUD operations
+
+---
+
+## [0.3.0] - 2024-01-XX (Pre-Sprint)
+
+### ✨ Added
+- Setup iniziale Next.js 14 con TypeScript
+- Integrazione Supabase (database + auth)
+- Configurazione shadcn/ui components
+- Setup Tailwind CSS con tema custom
+- Struttura base progetto con App Router
+
+### 📚 Documentation
+- Creato piano sviluppo MVP
+- Definite convenzioni codice
+- Documentato schema database
+- Aggiunte specifiche tecniche
+
+---
+
+## [0.2.0] - 2024-01-XX (Design Phase)
+
+### 📐 Design
+- Completati mockup UI/UX principali
+- Definiti user flows end-to-end
+- Creati wireframes responsive
+- Stabilita design system
+
+### 📊 Planning
+- Analisi requisiti funzionali
+- Definizione ruoli utente (4 ruoli)
+- Mappatura permessi e RLS
+- Pianificazione milestone
+
+---
+
+## [0.1.0] - 2024-01-XX (Initial Planning)
+
+### 🎉 Project Kickoff
+- Definizione obiettivi progetto
+- Selezione tech stack
+- Setup repository GitHub
+- Configurazione ambiente sviluppo
+
+### 📝 Documentation
+- Creato documento proposta iniziale
+- Definite specifiche tecniche v1
+- Stabiliti requisiti MVP
+
+---
+
+## Version History Legend
+
+### Emoji Guide
+- ✨ `Added` - Nuove funzionalità
+- 🔄 `Changed` - Modifiche a funzionalità esistenti  
+- 🗑️ `Deprecated` - Funzionalità deprecate
+- 🐛 `Fixed` - Bug fix
+- 🔥 `Removed` - Funzionalità rimosse
+- 🔒 `Security` - Fix di sicurezza
+- 📚 `Documentation` - Aggiornamenti documentazione
+- 🎨 `Style` - Modifiche UI/UX
+- ⚡ `Performance` - Miglioramenti performance
+- ♻️ `Refactor` - Refactoring codice
+- 🧪 `Tests` - Aggiunti/modificati test
+- 🚧 `WIP` - Work in progress
+
+---
+
+## Upcoming Releases Roadmap
+
+### v1.0.0-beta.1 (Target: Week 2)
+- Dashboard completa funzionante
+- Project management base
+- Component list view
+
+### v1.0.0-beta.2 (Target: Week 4)
+- Component CRUD completo
+- Evaluation forms
+- Action plans base
+
+### v1.0.0-rc.1 (Target: Week 6)
+- Reporting & analytics
+- Admin panel
+- Performance optimizations
+
+### v1.0.0 (Target: Week 7)
+- Production ready
+- Full test coverage
+- Complete documentation
+
+---
+
+## Migration Notes
+
+### Da v0.2.x a v0.3.x
+- **Breaking Change**: Migrazione da Pages Router ad App Router
+- Aggiornare tutti i path di import
+- Rimuovere `_app.tsx` e `_document.tsx`
+- Aggiornare middleware per i18n
+
+### Da v0.3.x a v1.0.0
+- Nessun breaking change previsto
+- Aggiornamento schema database potrebbe richiedere migrazione dati
+
+---
+
+## Hotfix History
+
+### Hotfix Registry
+*Nessun hotfix applicato finora*
+
+Format: `[version]-hotfix-[number]: [description] ([date])`
+
+---
+
+## Contributors
+
+### Core Team
+- **Lead Developer**: [Nome]
+- **UI/UX Designer**: [Nome]
+- **Database Architect**: [Nome]
+- **QA Engineer**: [Nome]
+
+### Special Thanks
+- Team Supabase per il supporto
+- Community Next.js per feedback
+- Beta testers per segnalazioni
+
+---
+
+## Links
+
+- [GitHub Repository](https://github.com/org/geogrowth)
+- [Issue Tracker](https://github.com/org/geogrowth/issues)
+- [Project Board](https://github.com/org/geogrowth/projects/1)
+- [Documentation](./docs/README.md)
+
+---
+
+*Per segnalare problemi o suggerire miglioramenti, aprire una issue su GitHub.*
+
+**Maintained by**: GeoGrowth Team  
+**License**: [License Type]  
+**Last Updated**: [Data Corrente]

@@ -31,7 +31,7 @@ export type Project = {
 };
 
 // Funzione helper per calcolare il tempo rimanente
-const formatTimeRemaining = (dateString: string | null): { text: string; className: string } => {
+const formatTimeRemaining = (dateString: string | null, t: any): { text: string; className: string } => {
     if (!dateString) return { text: '-', className: 'text-muted-foreground' };
     const milestoneDate = new Date(dateString);
     const today = new Date();
@@ -39,12 +39,25 @@ const formatTimeRemaining = (dateString: string | null): { text: string; classNa
     const diffTime = milestoneDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return { text: `Overdue by ${Math.abs(diffDays)} days`, className: 'text-destructive' };
-    if (diffDays <= 7) return { text: `in ${diffDays} days`, className: 'text-amber-600' };
-    return { text: `in ${diffDays} days`, className: 'text-muted-foreground' };
+    if (diffDays < 0) {
+        return { 
+            text: t('overdueByDays', { days: Math.abs(diffDays) }), 
+            className: 'text-destructive' 
+        };
+    }
+    if (diffDays <= 7) {
+        return { 
+            text: t('inDays', { days: diffDays }), 
+            className: 'text-amber-600' 
+        };
+    }
+    return { 
+        text: t('inDays', { days: diffDays }), 
+        className: 'text-muted-foreground' 
+    };
 };
 
-export const columns: ColumnDef<Project>[] = [
+export const getColumns = (t: any): ColumnDef<Project>[] => [
   // Colonna per la selezione multipla
   {
     id: 'select',
@@ -70,7 +83,7 @@ export const columns: ColumnDef<Project>[] = [
     accessorKey: 'project_name',
     header: ({ column }) => (
       <Button variant="ghost" className="font-medium" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        Project Name
+        {t('projectName')}
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
@@ -83,12 +96,14 @@ export const columns: ColumnDef<Project>[] = [
   // Colonna "Status"
   {
     accessorKey: 'project_status',
-    header: () => <div className="font-medium text-center">Status</div>,
+    header: () => <div className="font-medium text-center">{t('status')}</div>,
     cell: ({ row }) => {
       const status = row.getValue('project_status') as string;
       return (
         <div className="text-center">
-            <Badge variant={status === 'Active' ? 'default' : 'secondary'}>{status}</Badge>
+            <Badge variant={status === 'Active' ? 'default' : 'secondary'}>
+              {t(status.toLowerCase())}
+            </Badge>
         </div>
       );
     },
@@ -96,20 +111,22 @@ export const columns: ColumnDef<Project>[] = [
   // Colonna "Risks"
   {
     id: 'risks',
-    header: () => <div className="font-medium text-center">Risks</div>,
+    header: () => <div className="font-medium text-center">{t('risks')}</div>,
     cell: ({ row }) => {
         const count = row.original.overdue_action_plans_count;
         if (!count || count === 0) {
             return (
                 <div className="flex justify-center">
-                    <Badge className="bg-green-100 text-green-800 hover:bg-green-200">no overdues</Badge>
+                    <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                      {t('noOverdues')}
+                    </Badge>
                 </div>
             );
         }
         return (
             <div className="flex justify-center">
                 <Badge variant="destructive" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
-                    {count} overdue
+                    {count} {t('overdue')}
                 </Badge>
             </div>
         );
@@ -118,7 +135,7 @@ export const columns: ColumnDef<Project>[] = [
   // Colonna: Items (ex Comps.)
   {
     accessorKey: 'total_components',
-    header: () => <div className="font-medium text-center">Items</div>,
+    header: () => <div className="font-medium text-center">{t('items')}</div>,
     cell: ({ row }) => {
       const total = row.original.total_components ?? 0;
       return (
@@ -129,7 +146,7 @@ export const columns: ColumnDef<Project>[] = [
                 <Badge variant="default">{total}</Badge>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Total items in this project</p>
+                <p>{t('totalItemsTooltip')}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -141,7 +158,7 @@ export const columns: ColumnDef<Project>[] = [
   // Colonna: Maturity Index
   {
     id: 'maturity_index',
-    header: () => <div className="font-medium">Maturity Index</div>,
+    header: () => <div className="font-medium">{t('maturityIndex')}</div>,
     cell: ({ row }) => {
       const project = row.original;
       
@@ -161,7 +178,7 @@ export const columns: ColumnDef<Project>[] = [
           <MaturityIndex 
             data={maturityData}
             variant="compact"
-            showLabels={true}
+            showLabels={false}
             showTrend={false}
             hideTitle={true}
           />
@@ -174,13 +191,13 @@ export const columns: ColumnDef<Project>[] = [
     accessorKey: 'next_milestone_date',
     header: ({ column }) => (
         <Button variant="ghost" className="font-medium" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-            Next Milestone
+            {t('nextMilestone')}
             <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
     ),
     cell: ({ row }) => {
       const milestone = row.original.next_milestone_name;
-      const dateInfo = formatTimeRemaining(row.original.next_milestone_date);
+      const dateInfo = formatTimeRemaining(row.original.next_milestone_date, t);
       if (!milestone) {
         return <span className="text-muted-foreground">-</span>;
       }
@@ -197,7 +214,7 @@ export const columns: ColumnDef<Project>[] = [
   // Colonna: Edit (ex Actions)
   {
     id: 'actions',
-    header: () => <div className="font-medium text-center">Edit</div>,
+    header: () => <div className="font-medium text-center">{t('projectEdit')}</div>,
     cell: ({ row }) => {
       return (
         <div className="flex justify-center">
@@ -206,13 +223,13 @@ export const columns: ColumnDef<Project>[] = [
                     <TooltipTrigger asChild>
                         <Link href={`/projects/${row.original.id}/edit`}>
                             <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Edit project</span>
+                                <span className="sr-only">{t('projectEdit')}</span>
                                 <FilePenLine className="h-4 w-4" />
                             </Button>
                         </Link>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Edit This Project</p>
+                        <p>{t('projectEdit')}</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
@@ -220,4 +237,4 @@ export const columns: ColumnDef<Project>[] = [
       );
     },
   },
-];
+]; // Fine dell'array columns, ora è il return della funzione

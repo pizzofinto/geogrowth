@@ -27,6 +27,7 @@ interface DataTableToolbarProps<TData> {
   setStatusFilter: (value: string) => void;
   searchTerm: string;
   setSearchTerm: (value: string) => void;
+  t: any;
 }
 
 export function DataTableToolbar<TData>({
@@ -36,6 +37,7 @@ export function DataTableToolbar<TData>({
   setStatusFilter,
   searchTerm,
   setSearchTerm,
+  t,
 }: DataTableToolbarProps<TData>) {
   const numSelected = table.getFilteredSelectedRowModel().rows.length;
 
@@ -52,22 +54,22 @@ export function DataTableToolbar<TData>({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-10">
-                Actions ({numSelected})
+                {t('actions')} ({numSelected})
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('bulkActions')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {/* Mostra "Change Status" solo se l'utente ha i permessi */}
               {canChangeStatus && (
                 <DropdownMenuItem>
                   <Settings2 className="mr-2 h-4 w-4" />
-                  Change Status
+                  {t('changeStatus')}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem>
                 <FileUp className="mr-2 h-4 w-4" />
-                Export Selected
+                {t('exportSelected')}
               </DropdownMenuItem>
               {/* Mostra "Delete Selected" solo se l'utente ha i permessi */}
               {canDeleteProject && (
@@ -75,7 +77,7 @@ export function DataTableToolbar<TData>({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Selected
+                    {t('deleteSelected')}
                   </DropdownMenuItem>
                 </>
               )}
@@ -83,20 +85,20 @@ export function DataTableToolbar<TData>({
           </DropdownMenu>
         ) : null}
         <Input
-          placeholder="Search by name or code..."
+          placeholder={t('searchPlaceholder')}
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           className="h-10 w-[150px] lg:w-[250px]"
         />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px] h-10">
-            <SelectValue placeholder="Filter by status" />
+            <SelectValue placeholder={t('filterByStatus')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="All">All Statuses</SelectItem>
-            <SelectItem value="Active">Active</SelectItem>
-            <SelectItem value="Archived">Archived</SelectItem>
-            <SelectItem value="Closed">Closed</SelectItem>
+            <SelectItem value="All">{t('allStatuses')}</SelectItem>
+            <SelectItem value="Active">{t('active')}</SelectItem>
+            <SelectItem value="Archived">{t('archived')}</SelectItem>
+            <SelectItem value="Closed">{t('closed')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -105,7 +107,7 @@ export function DataTableToolbar<TData>({
       {canCreateProject && (
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Create New Project
+          {t('createNewProject')}
         </Button>
       )}
     </div>

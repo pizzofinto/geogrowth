@@ -1,21 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { columns, Project } from './columns';
+import { getColumns, Project } from './columns';
 import { DataTable } from './data-table';
+import { useTranslations } from 'next-intl';
 
 export default function ProjectSelectionPage() {
   const { user, roles, isLoading: authLoading } = useAuth();
+  const t = useTranslations('projects');
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Active');
 
+  // Genera le colonne con le traduzioni
+    const columns = React.useMemo(() => getColumns(t), [t]);
+
   useEffect(() => {
-    document.title = 'Project Selection | GeoGrowth';
+    document.title = `${t('title')} | GeoGrowth`;
 
     async function fetchProjects() {
       if (!user) return;
@@ -54,12 +59,12 @@ export default function ProjectSelectionPage() {
   }, [searchTerm, statusFilter, allProjects]);
 
   if (authLoading || loading) {
-      return <div>Loading projects...</div>;
+      return <div>{t('loadingProjects')}</div>;
   }
 
   return (
     <div className="flex flex-col h-full w-full">
-      <h1 className="text-3xl font-bold mb-4">Projects</h1>
+      <h1 className="text-3xl font-bold mb-4">{t('title')}</h1>
       <DataTable 
         columns={columns} 
         data={filteredProjects}
@@ -68,6 +73,7 @@ export default function ProjectSelectionPage() {
         setStatusFilter={setStatusFilter}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        t={t}
       />
     </div>
   );
