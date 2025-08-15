@@ -17,7 +17,7 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -25,78 +25,104 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Get initial session first to avoid race condition
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting initial session:', error);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Process initial session
+        await processAuthUser(session?.user ?? null);
+      } catch (error) {
+        console.error('Error during initial session setup:', error);
+        setIsLoading(false);
+      }
+    };
+
+    const processAuthUser = async (authUser: User | null) => {
+
+        if (authUser) {
+          try {
+            // 1. Recuperiamo il profilo dalla tabella 'users' (INCLUSA LA LINGUA!)
+            const { data: profile, error: profileError } = await supabase
+              .from('users')
+              .select('full_name, preferred_language') // ← AGGIUNTO preferred_language!
+              .eq('id', authUser.id)
+              .single();
+
+            if (profileError) {
+              console.warn('Errore recupero profilo:', profileError);
+            }
+
+            // 2. Recuperiamo i ruoli
+            const { data: rolesData, error: rolesError } = await supabase
+              .from('user_role_assignments')
+              .select('user_roles(role_name)')
+              .eq('user_id', authUser.id);
+            
+            if (rolesError) {
+              console.error('Errore recupero ruoli:', rolesError);
+            }
+
+            // 3. Mappiamo i ruoli in modo sicuro
+            const userRoles: string[] = [];
+            if (rolesData && Array.isArray(rolesData)) {
+              rolesData.forEach((item: any) => {
+                if (item?.user_roles?.role_name) {
+                  userRoles.push(item.user_roles.role_name);
+                }
+              });
+            }
+
+            console.log('🔍 Ruoli utente:', userRoles);
+            console.log('🔍 Lingua preferita:', profile?.preferred_language); // ← AGGIUNTO LOG!
+            
+            // 4. Creiamo l'oggetto utente arricchito (CON LA LINGUA!)
+            const userWithProfile: UserProfile = {
+              ...authUser,
+              full_name: profile?.full_name,
+              // Fallback chain: DB preference → localStorage → 'en'
+              preferred_language: profile?.preferred_language || 
+                                 (localStorage.getItem('preferred-language') as 'en' | 'it') || 
+                                 'en',
+            };
+
+            setUser(userWithProfile);
+            setRoles(userRoles);
+
+          } catch (error) {
+            console.error('Errore durante il setup auth:', error);
+            // Anche nel fallback, includiamo la lingua di default con chain completa
+            setUser({
+              ...authUser,
+              preferred_language: (localStorage.getItem('preferred-language') as 'en' | 'it') || 'en' // ← AGGIUNTO fallback chain!
+            } as UserProfile);
+            setRoles([]);
+          }
+        } else {
+          console.log('🔍 Nessun utente autenticato');
+          setUser(null);
+          setRoles([]);
+        }
+        
+        setIsLoading(false);
+      };
+
+    // Get initial session on mount
+    getInitialSession();
+
+    // Set up auth state listener
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔍 Auth state change:', event, !!session?.user);
       
       const authUser = session?.user ?? null;
-
-      if (authUser) {
-        try {
-          // 1. Recuperiamo il profilo dalla tabella 'users' (INCLUSA LA LINGUA!)
-          const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('full_name, preferred_language') // ← AGGIUNTO preferred_language!
-            .eq('id', authUser.id)
-            .single();
-
-          if (profileError) {
-            console.warn('Errore recupero profilo:', profileError);
-          }
-
-          // 2. Recuperiamo i ruoli
-          const { data: rolesData, error: rolesError } = await supabase
-            .from('user_role_assignments')
-            .select('user_roles(role_name)')
-            .eq('user_id', authUser.id);
-          
-          if (rolesError) {
-            console.error('Errore recupero ruoli:', rolesError);
-          }
-
-          // 3. Mappiamo i ruoli in modo sicuro
-          const userRoles: string[] = [];
-          if (rolesData && Array.isArray(rolesData)) {
-            rolesData.forEach((item: any) => {
-              if (item?.user_roles?.role_name) {
-                userRoles.push(item.user_roles.role_name);
-              }
-            });
-          }
-
-          console.log('🔍 Ruoli utente:', userRoles);
-          console.log('🔍 Lingua preferita:', profile?.preferred_language); // ← AGGIUNTO LOG!
-          
-          // 4. Creiamo l'oggetto utente arricchito (CON LA LINGUA!)
-          const userWithProfile: UserProfile = {
-            ...authUser,
-            full_name: profile?.full_name,
-            // Fallback chain: DB preference → localStorage → 'en'
-            preferred_language: profile?.preferred_language || 
-                               (localStorage.getItem('preferred-language') as 'en' | 'it') || 
-                               'en',
-          };
-
-          setUser(userWithProfile);
-          setRoles(userRoles);
-
-        } catch (error) {
-          console.error('Errore durante il setup auth:', error);
-          // Anche nel fallback, includiamo la lingua di default con chain completa
-          setUser({
-            ...authUser,
-            preferred_language: (localStorage.getItem('preferred-language') as 'en' | 'it') || 'en' // ← AGGIUNTO fallback chain!
-          } as UserProfile);
-          setRoles([]);
-        }
-      } else {
-        console.log('🔍 Nessun utente autenticato');
-        setUser(null);
-        setRoles([]);
-      }
-      
-      setIsLoading(false);
+      await processAuthUser(authUser);
     });
 
     return () => {

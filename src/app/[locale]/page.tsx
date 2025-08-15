@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { UserAuthForm } from '@/components/auth/user-auth-form';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useTranslations, useLocale } from 'next-intl';
-import { AuthProvider } from '@/contexts/AuthContext';
 
 // A simple SVG icon for the logo
 const GeoGrowthLogo = () => (
@@ -74,9 +73,5 @@ function LoginPageContent() {
 }
 
 export default function LoginPage() {
-  return (
-    <AuthProvider>
-      <LoginPageContent />
-    </AuthProvider>
-  );
+  return <LoginPageContent />;
 }

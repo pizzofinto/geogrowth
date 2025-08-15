@@ -2,16 +2,17 @@
 
 import { useLocale } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useContext } from 'react';
 import { Locale, locales } from '@/i18n/config';
 import { supabase } from '@/lib/supabaseClient';
-import { useAuth } from '@/contexts/AuthContext';
+import { AuthContext } from '@/contexts/AuthContext';
 
 export function useLanguage() {
   const locale = useLocale() as Locale;
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
+  // Use useContext directly to avoid throwing error when context is not ready
+  const authContext = useContext(AuthContext);
   const [isPending, startTransition] = useTransition();
   const [isChangingLocale, setIsChangingLocale] = useState(false);
 
@@ -31,13 +32,13 @@ export function useLanguage() {
     setIsChangingLocale(true);
     
     try {
-      // 💾 Salva nel database se l'utente è autenticato
-      if (user?.id) {
+      // 💾 Salva nel database se l'utente è autenticato e il context è pronto
+      if (authContext?.user?.id && !authContext?.isLoading) {
         console.log('💾 Salvando preferenza lingua nel database...');
         const { error } = await supabase
           .from('users')
           .update({ preferred_language: newLocale })
-          .eq('id', user.id);
+          .eq('id', authContext.user.id);
 
         if (error) {
           console.error('❌ Errore salvataggio database:', error);

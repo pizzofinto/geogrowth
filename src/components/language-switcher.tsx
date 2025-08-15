@@ -14,9 +14,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useLanguage } from '@/hooks/useLanguage';
 import { Locale, locales } from '@/i18n/config';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { useRouter, usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface LanguageSwitcherProps {
@@ -42,12 +43,31 @@ export function LanguageSwitcher({
   showText = true,
   className 
 }: LanguageSwitcherProps) {
-  const { locale, setLocale, isChangingLocale } = useLanguage();
+  // Simplified approach - don't use useLanguage hook which depends on auth
+  const locale = useLocale() as Locale;
+  const router = useRouter();
+  const pathname = usePathname();
   const tCommon = useTranslations('common');
+  const [isChangingLocale, setIsChangingLocale] = useState(false);
 
   const handleLanguageChange = async (newLocale: Locale) => {
-    if (newLocale !== locale && !isChangingLocale) {
-      await setLocale(newLocale);
+    if (newLocale === locale || isChangingLocale) return;
+    
+    setIsChangingLocale(true);
+    
+    try {
+      // Save to localStorage (auth-based saving will happen later when user logs in)
+      localStorage.setItem('preferred-language', newLocale);
+      
+      // Navigate to new locale
+      const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}/, '') || '/';
+      const newPath = `/${newLocale}${pathWithoutLocale}`;
+      
+      router.replace(newPath);
+    } catch (error) {
+      console.error('Error changing language:', error);
+    } finally {
+      setIsChangingLocale(false);
     }
   };
 
