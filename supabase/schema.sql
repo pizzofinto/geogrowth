@@ -391,59 +391,65 @@ CREATE OR REPLACE FUNCTION "public"."get_global_dashboard_stats"() RETURNS json
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
-    result json;
-BEGIN
-    WITH 
-    active_projects AS (
-        SELECT COUNT(*) as count FROM projects WHERE project_status = 'Active'
-    ),
-    risk_projects AS (
-        SELECT COUNT(DISTINCT p.id) as count
-        FROM projects p
-        WHERE p.project_status = 'Active'
-          AND EXISTS (
-            SELECT 1 FROM parent_components pc
-            JOIN action_plans ap ON pc.id = ap.parent_component_id
-            WHERE pc.project_id = p.id
-              AND ap.due_date < CURRENT_DATE
-              AND ap.action_plan_status NOT IN ('Completed', 'Verified', 'Cancelled')
-          )
-    ),
-    upcoming_deadlines AS (
-        SELECT COUNT(*) as count
-        FROM project_milestone_instances
-        WHERE milestone_status NOT IN ('Completed', 'Cancelled')
-          AND milestone_target_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
-    ),
-    next_milestones AS (
-        SELECT COALESCE(json_agg(t ORDER BY t.milestone_target_date ASC), '[]'::json) as milestones
-        FROM (
-            SELECT p.project_name, md.milestone_name, pmi.milestone_target_date
-            FROM project_milestone_instances pmi
-            JOIN projects p ON pmi.project_id = p.id
-            JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
-            WHERE pmi.milestone_status NOT IN ('Completed', 'Cancelled')
-              AND pmi.milestone_target_date >= CURRENT_DATE
-              AND p.project_status = 'Active'
-            ORDER BY pmi.milestone_target_date ASC
-            LIMIT 5
-        ) t
-    )
-    SELECT json_build_object(
-        'active_projects', ap.count,
-        'projects_at_risk', rp.count,
-        'upcoming_deadlines', ud.count,
-        'next_milestones', nm.milestones
-    ) INTO result
-    FROM active_projects ap
-    CROSS JOIN risk_projects rp
-    CROSS JOIN upcoming_deadlines ud
-    CROSS JOIN next_milestones nm;
+  DECLARE
+      result json;
+  BEGIN
+      WITH
+      active_projects AS (
+          SELECT COUNT(*) as count
+          FROM projects
+          WHERE project_status = 'Active'
+          AND public.is_assigned_to_project(id)
+      ),
+      risk_projects AS (
+          SELECT COUNT(DISTINCT p.id) as count
+          FROM projects p
+          WHERE p.project_status = 'Active'
+            AND public.is_assigned_to_project(p.id)
+            AND EXISTS (
+              SELECT 1 FROM parent_components pc
+              JOIN action_plans ap ON pc.id = ap.parent_component_id
+              WHERE pc.project_id = p.id
+                AND ap.due_date < CURRENT_DATE
+                AND ap.action_plan_status NOT IN ('Completed', 'Verified', 'Cancelled')
+            )
+      ),
+      upcoming_deadlines AS (
+          SELECT COUNT(*) as count
+          FROM project_milestone_instances pmi
+          WHERE pmi.milestone_status NOT IN ('Completed', 'Cancelled')
+            AND pmi.milestone_target_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+            AND public.is_assigned_to_project(pmi.project_id)
+      ),
+      next_milestones AS (
+          SELECT COALESCE(json_agg(t ORDER BY t.milestone_target_date ASC), '[]'::json) as milestones
+          FROM (
+              SELECT p.project_name, md.milestone_name, pmi.milestone_target_date
+              FROM project_milestone_instances pmi
+              JOIN projects p ON pmi.project_id = p.id
+              JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
+              WHERE pmi.milestone_status NOT IN ('Completed', 'Cancelled')
+                AND pmi.milestone_target_date >= CURRENT_DATE
+                AND p.project_status = 'Active'
+                AND public.is_assigned_to_project(p.id)
+              ORDER BY pmi.milestone_target_date ASC
+              LIMIT 5
+          ) t
+      )
+      SELECT json_build_object(
+          'active_projects', ap.count,
+          'projects_at_risk', rp.count,
+          'upcoming_deadlines', ud.count,
+          'next_milestones', nm.milestones
+      ) INTO result
+      FROM active_projects ap
+      CROSS JOIN risk_projects rp
+      CROSS JOIN upcoming_deadlines ud
+      CROSS JOIN next_milestones nm;
 
-    RETURN result;
-END;
-$$;
+      RETURN result;
+  END;
+  $$;
 
 
 ALTER FUNCTION "public"."get_global_dashboard_stats"() OWNER TO "postgres";
@@ -453,64 +459,69 @@ CREATE OR REPLACE FUNCTION "public"."get_projects_with_details"() RETURNS TABLE(
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-BEGIN
-    RETURN QUERY
-    WITH 
-    -- CTE ottimizzata per calcolare tutte le statistiche dei componenti in un unico passaggio
-    component_stats AS (
-        SELECT
-            p.id AS project_id,
-            COUNT(pc.id) AS total,
-            COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'OTOP') AS otop,
-            COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'OT') AS ot,
-            COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'KO') AS ko
-        FROM projects p
-        LEFT JOIN parent_components pc ON p.id = pc.project_id
-        GROUP BY p.id
-    ),
-    -- CTE per i piani d'azione scaduti
-    overdue_plans AS (
-        SELECT
-            pc.project_id,
-            COUNT(ap.id) as overdue_count
-        FROM action_plans ap
-        JOIN parent_components pc ON ap.parent_component_id = pc.id
-        WHERE
-            ap.due_date < CURRENT_DATE
-            AND ap.action_plan_status NOT IN ('Completed', 'Verified', 'Cancelled')
-        GROUP BY pc.project_id
-    ),
-    -- CTE per la prossima milestone
-    next_milestones AS (
-        SELECT
-            pmi.project_id,
-            md.milestone_name,
-            pmi.milestone_target_date,
-            ROW_NUMBER() OVER(PARTITION BY pmi.project_id ORDER BY pmi.milestone_target_date ASC) as rn
-        FROM project_milestone_instances pmi
-        JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
-        WHERE pmi.milestone_status <> 'Completed' AND pmi.milestone_target_date >= CURRENT_DATE
-    )
-    -- Select finale che unisce i dati pre-calcolati
-    SELECT
-        p.id,
-        p.project_name,
-        p.project_code,
-        p.project_status,
-        COALESCE((cs.otop * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS otop_percentage,
-        COALESCE((cs.ot * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS ot_percentage,
-        COALESCE((cs.ko * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS ko_percentage,
-        COALESCE(cs.total, 0) AS total_components,
-        COALESCE(op.overdue_count, 0) AS overdue_action_plans_count,
-        nm.milestone_name AS next_milestone_name,
-        nm.milestone_target_date AS next_milestone_date
-    FROM
-        projects p
-    LEFT JOIN component_stats cs ON p.id = cs.project_id
-    LEFT JOIN overdue_plans op ON p.id = op.project_id
-    LEFT JOIN next_milestones nm ON p.id = nm.project_id AND nm.rn = 1;
-END;
-$$;
+  BEGIN
+      RETURN QUERY
+      WITH
+      -- CTE ottimizzata per calcolare tutte le statistiche dei componenti in un unico passaggio
+      component_stats AS (
+          SELECT
+              p.id AS project_id,
+              COUNT(pc.id) AS total,
+              COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'OTOP') AS otop,
+              COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'OT') AS ot,
+              COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'KO') AS ko
+          FROM projects p
+          LEFT JOIN parent_components pc ON p.id = pc.project_id
+          WHERE public.is_assigned_to_project(p.id)
+          GROUP BY p.id
+      ),
+      -- CTE per i piani d'azione scaduti
+      overdue_plans AS (
+          SELECT
+              pc.project_id,
+              COUNT(ap.id) as overdue_count
+          FROM action_plans ap
+          JOIN parent_components pc ON ap.parent_component_id = pc.id
+          WHERE
+              ap.due_date < CURRENT_DATE
+              AND ap.action_plan_status NOT IN ('Completed', 'Verified', 'Cancelled')
+              AND public.is_assigned_to_project(pc.project_id)
+          GROUP BY pc.project_id
+      ),
+      -- CTE per la prossima milestone
+      next_milestones AS (
+          SELECT
+              pmi.project_id,
+              md.milestone_name,
+              pmi.milestone_target_date,
+              ROW_NUMBER() OVER(PARTITION BY pmi.project_id ORDER BY pmi.milestone_target_date ASC) as rn
+          FROM project_milestone_instances pmi
+          JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
+          WHERE pmi.milestone_status <> 'Completed'
+              AND pmi.milestone_target_date >= CURRENT_DATE
+              AND public.is_assigned_to_project(pmi.project_id)
+      )
+      -- Select finale che unisce i dati pre-calcolati
+      SELECT
+          p.id,
+          p.project_name,
+          p.project_code,
+          p.project_status,
+          COALESCE((cs.otop * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS otop_percentage,
+          COALESCE((cs.ot * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS ot_percentage,
+          COALESCE((cs.ko * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS ko_percentage,
+          COALESCE(cs.total, 0) AS total_components,
+          COALESCE(op.overdue_count, 0) AS overdue_action_plans_count,
+          nm.milestone_name AS next_milestone_name,
+          nm.milestone_target_date AS next_milestone_date
+      FROM
+          projects p
+      LEFT JOIN component_stats cs ON p.id = cs.project_id
+      LEFT JOIN overdue_plans op ON p.id = op.project_id
+      LEFT JOIN next_milestones nm ON p.id = nm.project_id AND nm.rn = 1
+      WHERE public.is_assigned_to_project(p.id);
+  END;
+  $$;
 
 
 ALTER FUNCTION "public"."get_projects_with_details"() OWNER TO "postgres";
@@ -518,8 +529,18 @@ ALTER FUNCTION "public"."get_projects_with_details"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."get_recent_projects_for_user"("user_id_param" "uuid", "limit_param" integer DEFAULT 4) RETURNS TABLE("project_id" bigint, "project_name" "text", "project_status" "text", "last_accessed" timestamp with time zone, "total_components" integer, "overdue_action_plans_count" integer, "otop_percentage" numeric, "ot_percentage" numeric, "ko_percentage" numeric, "next_milestone_name" "text", "next_milestone_date" "date")
     LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
+  -- Validate input parameters
+  IF user_id_param IS NULL THEN
+    RAISE EXCEPTION 'user_id_param cannot be NULL';
+  END IF;
+  
+  IF limit_param IS NULL OR limit_param <= 0 OR limit_param > 100 THEN
+    RAISE EXCEPTION 'limit_param must be between 1 and 100, received: %', limit_param;
+  END IF;
+
   RETURN QUERY
   SELECT 
     pwd.id as project_id,
@@ -539,6 +560,12 @@ BEGIN
   AND pwd.project_status = 'Active'  -- Solo progetti attivi
   ORDER BY COALESCE(upa.last_accessed, upa.assigned_at) DESC NULLS LAST
   LIMIT limit_param;
+  
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Log error and re-raise
+    RAISE WARNING 'Error in get_recent_projects_for_user: %', SQLERRM;
+    RAISE;
 END;
 $$;
 
@@ -550,80 +577,82 @@ CREATE OR REPLACE FUNCTION "public"."get_upcoming_project_timelines"("project_li
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-BEGIN
-    -- Validazione input
-    IF project_limit <= 0 OR project_limit > 100 THEN
-        RAISE EXCEPTION 'project_limit deve essere tra 1 e 100, ricevuto: %', project_limit;
-    END IF;
+  BEGIN
+      -- Validazione input
+      IF project_limit <= 0 OR project_limit > 100 THEN
+          RAISE EXCEPTION 'project_limit deve essere tra 1 e 100, ricevuto: %', project_limit;
+      END IF;
 
-    RETURN (
-        SELECT 
-            COALESCE(json_agg(project_data), '[]'::json) as result
-        FROM (
-            SELECT 
-                json_build_object(
-                    'project_id', p.id,
-                    'project_name', p.project_name,
-                    'project_start_date', COALESCE(p.project_start_date, p.created_at::date),
-                    'project_end_date', COALESCE(
-                        p.project_end_date,
-                        milestone_data.max_milestone_date + INTERVAL '30 days',
-                        CURRENT_DATE + INTERVAL '6 months'
-                    ),
-                    'milestones', COALESCE(milestone_data.milestones_json, '[]'::json)
-                ) as project_data
-            FROM (
-                -- Seleziona i progetti top con priorità ottimizzata
-                SELECT 
-                    pmi.project_id,
-                    -- Priorità: progetti "In Progress" prima, poi per data milestone più vicina
-                    MIN(CASE 
-                        WHEN pmi.milestone_status = 'In Progress' THEN 1 
-                        ELSE 2 
-                    END) as status_priority,
-                    MIN(CASE 
-                        WHEN pmi.milestone_target_date >= CURRENT_DATE 
-                        THEN pmi.milestone_target_date 
-                        ELSE '9999-12-31'::date 
-                    END) as next_milestone_date
-                FROM project_milestone_instances pmi
-                WHERE pmi.milestone_status NOT IN ('Completed', 'Cancelled')
-                GROUP BY pmi.project_id
-                ORDER BY status_priority, next_milestone_date
-                LIMIT project_limit
-            ) top_projects
-            JOIN projects p ON p.id = top_projects.project_id
-            LEFT JOIN (
-                -- Pre-aggrega i dati dei milestone per evitare subquery correlate
-                SELECT 
-                    pmi.project_id,
-                    MAX(pmi.milestone_target_date) as max_milestone_date,
-                    json_agg(
-                        json_build_object(
-                            'milestone_name', md.milestone_name,
-                            'milestone_target_date', pmi.milestone_target_date,
-                            'milestone_status', pmi.milestone_status
-                        ) ORDER BY pmi.milestone_target_date ASC
-                    ) as milestones_json
-                FROM project_milestone_instances pmi
-                JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
-                WHERE pmi.project_id IN (
-                    SELECT pmi2.project_id
-                    FROM project_milestone_instances pmi2
-                    WHERE pmi2.milestone_status NOT IN ('Completed', 'Cancelled')
-                    GROUP BY pmi2.project_id
-                    ORDER BY 
-                        MIN(CASE WHEN pmi2.milestone_status = 'In Progress' THEN 1 ELSE 2 END),
-                        MIN(CASE WHEN pmi2.milestone_target_date >= CURRENT_DATE THEN pmi2.milestone_target_date ELSE '9999-12-31'::date END)
-                    LIMIT project_limit
-                )
-                GROUP BY pmi.project_id
-            ) milestone_data ON milestone_data.project_id = p.id
-            ORDER BY top_projects.status_priority, top_projects.next_milestone_date
-        ) final_projects
-    );
-END;
-$$;
+      RETURN (
+          SELECT
+              COALESCE(json_agg(project_data), '[]'::json) as result
+          FROM (
+              SELECT
+                  json_build_object(
+                      'project_id', p.id,
+                      'project_name', p.project_name,
+                      'project_start_date', COALESCE(p.project_start_date, p.created_at::date),
+                      'project_end_date', COALESCE(
+                          p.project_end_date,
+                          milestone_data.max_milestone_date + INTERVAL '30 days',
+                          CURRENT_DATE + INTERVAL '6 months'
+                      ),
+                      'milestones', COALESCE(milestone_data.milestones_json, '[]'::json)
+                  ) as project_data
+              FROM (
+                  -- Seleziona i progetti top con priorità ottimizzata
+                  SELECT
+                      pmi.project_id,
+                      -- Priorità: progetti "In Progress" prima, poi per data milestone più vicina
+                      MIN(CASE
+                          WHEN pmi.milestone_status = 'In Progress' THEN 1
+                          ELSE 2
+                      END) as status_priority,
+                      MIN(CASE
+                          WHEN pmi.milestone_target_date >= CURRENT_DATE
+                          THEN pmi.milestone_target_date
+                          ELSE '9999-12-31'::date
+                      END) as next_milestone_date
+                  FROM project_milestone_instances pmi
+                  WHERE pmi.milestone_status NOT IN ('Completed', 'Cancelled')
+                  AND public.is_assigned_to_project(pmi.project_id)
+                  GROUP BY pmi.project_id
+                  ORDER BY status_priority, next_milestone_date
+                  LIMIT project_limit
+              ) top_projects
+              JOIN projects p ON p.id = top_projects.project_id
+              LEFT JOIN (
+                  -- Pre-aggrega i dati dei milestone per evitare subquery correlate
+                  SELECT
+                      pmi.project_id,
+                      MAX(pmi.milestone_target_date) as max_milestone_date,
+                      json_agg(
+                          json_build_object(
+                              'milestone_name', md.milestone_name,
+                              'milestone_target_date', pmi.milestone_target_date,
+                              'milestone_status', pmi.milestone_status
+                          ) ORDER BY pmi.milestone_target_date ASC
+                      ) as milestones_json
+                  FROM project_milestone_instances pmi
+                  JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
+                  WHERE pmi.project_id IN (
+                      SELECT pmi2.project_id
+                      FROM project_milestone_instances pmi2
+                      WHERE pmi2.milestone_status NOT IN ('Completed', 'Cancelled')
+                      AND public.is_assigned_to_project(pmi2.project_id)
+                      GROUP BY pmi2.project_id
+                      ORDER BY
+                          MIN(CASE WHEN pmi2.milestone_status = 'In Progress' THEN 1 ELSE 2 END),
+                          MIN(CASE WHEN pmi2.milestone_target_date >= CURRENT_DATE THEN pmi2.milestone_target_date ELSE '9999-12-31'::date END)
+                      LIMIT project_limit
+                  )
+                  GROUP BY pmi.project_id
+              ) milestone_data ON milestone_data.project_id = p.id
+              ORDER BY top_projects.status_priority, top_projects.next_milestone_date
+          ) final_projects
+      );
+  END;
+  $$;
 
 
 ALTER FUNCTION "public"."get_upcoming_project_timelines"("project_limit" integer) OWNER TO "postgres";
@@ -634,40 +663,93 @@ CREATE OR REPLACE FUNCTION "public"."has_role"("role_to_check" "text") RETURNS b
     SET "search_path" TO 'public'
     AS $$
 DECLARE
-  user_id_value UUID;
-  has_the_role BOOLEAN;
+    user_id_value UUID;
+    has_the_role BOOLEAN;
 BEGIN
-    -- 1. Get the current user's ID. Return false if not authenticated.
+    -- Get the current user's ID from auth context
     user_id_value := auth.uid();
+    
+    -- Se NULL (come in SQL Editor), prova metodi alternativi
+    IF user_id_value IS NULL THEN
+        -- Prova a leggere da diversi possibili settings
+        BEGIN
+            user_id_value := COALESCE(
+                current_setting('auth.uid', true)::UUID,
+                current_setting('request.jwt.claim.sub', true)::UUID,
+                current_setting('request.jwt.claims', true)::json->>'sub'::UUID
+            );
+        EXCEPTION WHEN OTHERS THEN
+            -- Se tutti i metodi falliscono, ritorna false
+            RETURN false;
+        END;
+    END IF;
+    
+    -- Se ancora NULL, non possiamo procedere
     IF user_id_value IS NULL THEN
         RETURN false;
     END IF;
     
-    -- 2. Check for NULL or empty role input.
+    -- Check for NULL or empty role input
     IF role_to_check IS NULL OR BTRIM(role_to_check) = '' THEN
         RETURN false;
     END IF;
 
-    -- 3. Perform the check.
+    -- Perform the actual role check
     SELECT EXISTS (
         SELECT 1
         FROM public.user_role_assignments ura
         JOIN public.user_roles ur ON ura.role_id = ur.id
-        WHERE ura.user_id = user_id_value AND ur.role_name = role_to_check
+        WHERE ura.user_id = user_id_value 
+        AND ur.role_name = role_to_check
     ) INTO has_the_role;
 
-    RETURN has_the_role;
+    RETURN COALESCE(has_the_role, false);
 
 EXCEPTION
-    -- In case of any unexpected error during the query, log it and return false.
     WHEN OTHERS THEN
-        RAISE WARNING 'Error in has_role function: %', SQLERRM;
+        -- Log error for debugging but don't expose details
+        RAISE LOG 'Error in has_role function for role % and user %: %', 
+            role_to_check, user_id_value, SQLERRM;
         RETURN false;
 END;
 $$;
 
 
 ALTER FUNCTION "public"."has_role"("role_to_check" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."has_role"("role_to_check" "text") IS 'Checks if the current authenticated user has the specified role. Returns false if no user is authenticated.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."has_role_for_user"("user_id_param" "uuid", "role_to_check" "text") RETURNS boolean
+    LANGUAGE "plpgsql" STABLE
+    AS $$
+DECLARE
+    has_the_role BOOLEAN;
+BEGIN
+    IF user_id_param IS NULL OR role_to_check IS NULL OR BTRIM(role_to_check) = '' THEN
+        RETURN false;
+    END IF;
+
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.user_role_assignments ura
+        JOIN public.user_roles ur ON ura.role_id = ur.id
+        WHERE ura.user_id = user_id_param 
+        AND ur.role_name = role_to_check
+    ) INTO has_the_role;
+
+    RETURN COALESCE(has_the_role, false);
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE WARNING 'Error in has_role_for_user: %', SQLERRM;
+        RETURN false;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."has_role_for_user"("user_id_param" "uuid", "role_to_check" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."is_assigned_to_project"("project_id_to_check" bigint) RETURNS boolean
@@ -678,40 +760,98 @@ DECLARE
     user_id_value UUID;
     is_assigned BOOLEAN;
 BEGIN
-    -- 1. Get the current user's ID. Return false if not authenticated.
+    -- Get the current user's ID
     user_id_value := auth.uid();
+    
+    -- Se NULL (come in SQL Editor), prova metodi alternativi
+    IF user_id_value IS NULL THEN
+        BEGIN
+            user_id_value := COALESCE(
+                current_setting('auth.uid', true)::UUID,
+                current_setting('request.jwt.claim.sub', true)::UUID,
+                current_setting('request.jwt.claims', true)::json->>'sub'::UUID
+            );
+        EXCEPTION WHEN OTHERS THEN
+            RETURN false;
+        END;
+    END IF;
+    
+    -- Se ancora NULL, non possiamo procedere
     IF user_id_value IS NULL THEN
         RETURN false;
     END IF;
 
-    -- 2. Check for NULL project ID.
+    -- Check for NULL project ID
     IF project_id_to_check IS NULL THEN
         RETURN false;
     END IF;
 
-    -- 3. Check for high-privilege roles first. This is an optimization.
-    IF public.has_role('Super User') OR public.has_role('Supplier Quality') OR public.has_role('Engineering') THEN
+    -- Check for high-privilege roles first (optimization)
+    -- Questi ruoli hanno accesso a TUTTI i progetti
+    IF public.has_role('Super User') OR 
+       public.has_role('Supplier Quality') OR 
+       public.has_role('Engineering') THEN
         RETURN true;
     END IF;
 
-    -- 4. For other roles (like External User), check the assignment table.
+    -- For other roles (like External User), check explicit assignment
     SELECT EXISTS (
         SELECT 1
         FROM public.user_project_assignments upa
-        WHERE upa.project_id = project_id_to_check AND upa.user_id = user_id_value
+        WHERE upa.project_id = project_id_to_check 
+        AND upa.user_id = user_id_value
     ) INTO is_assigned;
 
-    RETURN is_assigned;
+    RETURN COALESCE(is_assigned, false);
 
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE WARNING 'Error in is_assigned_to_project function: %', SQLERRM;
+        -- Log error for debugging
+        RAISE LOG 'Error in is_assigned_to_project for project % and user %: %', 
+            project_id_to_check, user_id_value, SQLERRM;
         RETURN false;
 END;
 $$;
 
 
 ALTER FUNCTION "public"."is_assigned_to_project"("project_id_to_check" bigint) OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."is_assigned_to_project"("project_id_to_check" bigint) IS 'Checks if current user has access to a project. Users with Super User, Supplier Quality, or Engineering roles have access to all projects. Other users need explicit assignment in user_project_assignments table.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."is_assigned_to_project_for_user"("user_id_param" "uuid", "project_id_to_check" bigint) RETURNS boolean
+    LANGUAGE "plpgsql" STABLE
+    AS $$
+DECLARE
+    is_assigned BOOLEAN;
+BEGIN
+    IF user_id_param IS NULL OR project_id_to_check IS NULL THEN
+        RETURN false;
+    END IF;
+
+    -- Check for high-privilege roles
+    IF has_role_for_user(user_id_param, 'Super User') OR 
+       has_role_for_user(user_id_param, 'Supplier Quality') OR 
+       has_role_for_user(user_id_param, 'Engineering') THEN
+        RETURN true;
+    END IF;
+
+    -- For other roles, check the assignment table
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.user_project_assignments upa
+        WHERE upa.project_id = project_id_to_check 
+        AND upa.user_id = user_id_param
+    ) INTO is_assigned;
+
+    RETURN COALESCE(is_assigned, false);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."is_assigned_to_project_for_user"("user_id_param" "uuid", "project_id_to_check" bigint) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."log_changes"() RETURNS "trigger"
@@ -1027,12 +1167,54 @@ COMMENT ON FUNCTION "public"."update_parent_status_from_spc"() IS 'Triggers pare
 
 CREATE OR REPLACE FUNCTION "public"."update_project_last_accessed"("project_id_param" bigint, "user_id_param" "uuid" DEFAULT "auth"."uid"()) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
+DECLARE
+    v_rows_updated INT;
 BEGIN
-  UPDATE user_project_assignments
-  SET last_accessed = NOW()
-  WHERE project_id = project_id_param 
-  AND user_id = user_id_param;
+    -- Validate input parameters
+    IF project_id_param IS NULL THEN
+        RAISE EXCEPTION 'project_id_param cannot be NULL';
+    END IF;
+    
+    -- If user_id_param is NULL (shouldn't happen with auth.uid() default), get current user
+    IF user_id_param IS NULL THEN
+        user_id_param := auth.uid();
+        IF user_id_param IS NULL THEN
+            RAISE EXCEPTION 'No authenticated user found';
+        END IF;
+    END IF;
+
+    -- Update the last_accessed timestamp
+    UPDATE user_project_assignments
+    SET last_accessed = NOW()
+    WHERE project_id = project_id_param 
+      AND user_id = user_id_param;
+    
+    -- Check if the update affected any rows
+    GET DIAGNOSTICS v_rows_updated = ROW_COUNT;
+    
+    -- If no rows were updated, it might mean the user isn't assigned to this project
+    IF v_rows_updated = 0 THEN
+        -- Check if the assignment exists
+        IF NOT EXISTS (
+            SELECT 1 
+            FROM user_project_assignments 
+            WHERE project_id = project_id_param 
+              AND user_id = user_id_param
+        ) THEN
+            RAISE WARNING 'User % is not assigned to project %', user_id_param, project_id_param;
+            -- Optionally, you could raise an exception here instead:
+            -- RAISE EXCEPTION 'User % is not assigned to project %', user_id_param, project_id_param;
+        END IF;
+    END IF;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Log error and re-raise
+        RAISE WARNING 'Error in update_project_last_accessed: % (project_id: %, user_id: %)', 
+            SQLERRM, project_id_param, user_id_param;
+        RAISE;
 END;
 $$;
 
@@ -1811,7 +1993,9 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
     "is_active" boolean DEFAULT true NOT NULL,
     "last_login_at" timestamp with time zone,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "preferred_language" "text" DEFAULT 'en'::"text" NOT NULL,
+    CONSTRAINT "users_preferred_language_check" CHECK (("preferred_language" = ANY (ARRAY['en'::"text", 'it'::"text"])))
 );
 
 
@@ -1819,6 +2003,10 @@ ALTER TABLE "public"."users" OWNER TO "postgres";
 
 
 COMMENT ON TABLE "public"."users" IS 'Stores user profile information, extending Supabase auth.users.';
+
+
+
+COMMENT ON COLUMN "public"."users"."preferred_language" IS 'User preferred language for UI (en = English, it = Italian)';
 
 
 
@@ -3010,9 +3198,21 @@ GRANT ALL ON FUNCTION "public"."has_role"("role_to_check" "text") TO "service_ro
 
 
 
+GRANT ALL ON FUNCTION "public"."has_role_for_user"("user_id_param" "uuid", "role_to_check" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."has_role_for_user"("user_id_param" "uuid", "role_to_check" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."has_role_for_user"("user_id_param" "uuid", "role_to_check" "text") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."is_assigned_to_project"("project_id_to_check" bigint) TO "anon";
 GRANT ALL ON FUNCTION "public"."is_assigned_to_project"("project_id_to_check" bigint) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."is_assigned_to_project"("project_id_to_check" bigint) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."is_assigned_to_project_for_user"("user_id_param" "uuid", "project_id_to_check" bigint) TO "anon";
+GRANT ALL ON FUNCTION "public"."is_assigned_to_project_for_user"("user_id_param" "uuid", "project_id_to_check" bigint) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_assigned_to_project_for_user"("user_id_param" "uuid", "project_id_to_check" bigint) TO "service_role";
 
 
 

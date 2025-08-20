@@ -92,7 +92,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   const handleClick = () => {
     if (onProjectClick) {
       console.log('Clicking project:', project.project_id);  // Aggiungi log
-      onProjectClick(project.id);
+      onProjectClick(project.project_id);
     }
   };
 
