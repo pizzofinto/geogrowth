@@ -3,7 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowUpDown, FilePenLine, AlertTriangle } from 'lucide-react';
+import { ArrowUpDown, FilePenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { MaturityIndex, MaturityIndexData } from '@/components/shared/MaturityIndex';
@@ -31,7 +31,9 @@ export type Project = {
 };
 
 // Funzione helper per calcolare il tempo rimanente
-const formatTimeRemaining = (dateString: string | null, t: any): { text: string; className: string } => {
+type TranslationFunction = (key: string, values?: Record<string, string | number>) => string;
+
+const formatTimeRemaining = (dateString: string | null, t: TranslationFunction): { text: string; className: string } => {
     if (!dateString) return { text: '-', className: 'text-muted-foreground' };
     const milestoneDate = new Date(dateString);
     const today = new Date();
@@ -57,7 +59,7 @@ const formatTimeRemaining = (dateString: string | null, t: any): { text: string;
     };
 };
 
-export const getColumns = (t: any): ColumnDef<Project>[] => [
+export const getColumns = (t: TranslationFunction): ColumnDef<Project>[] => [
   // Colonna per la selezione multipla
   {
     id: 'select',

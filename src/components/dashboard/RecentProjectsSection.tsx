@@ -4,19 +4,19 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+// import { Avatar, AvatarFallback } from '@/components/ui/avatar'; // Unused for now
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowRight, 
-  TrendingUp, 
+  // TrendingUp,  // Unused for now
   AlertTriangle,
   FolderOpen,
   Grid3X3,
   List,
-  Calendar,
+  // Calendar,     // Unused for now
   ExternalLink,
-  RefreshCw,
-  ChevronRight
+  RefreshCw
+  // ChevronRight  // Unused for now
 } from 'lucide-react';
 import { useRecentProjects } from '@/hooks/useRecentProjects';
 import { formatLastAccessed, formatMilestoneDate } from '@/utils/dateUtils';
@@ -56,7 +56,19 @@ const MaturityBar = ({ otop, ot, ko, showPercentages = true }: {
 ); */}
 
 interface ProjectCardProps {
-  project: any;
+  project: {
+    project_id: number;
+    project_name: string;
+    project_status: string;
+    last_accessed: string;
+    total_components: number;
+    overdue_action_plans_count: number;
+    otop_percentage: number;
+    ot_percentage: number;
+    ko_percentage: number;
+    next_milestone_name?: string;
+    next_milestone_date?: string;
+  };
   compact?: boolean;
   listView?: boolean;
   onProjectClick: (projectId: number) => void;
@@ -257,7 +269,7 @@ export default function RecentProjectsSection({ limit = 4, className }: RecentPr
 
   // Translations
   const tDashboard = useTranslations('dashboard');
-  const tProjects = useTranslations('projects');
+  // const tProjects = useTranslations('projects'); // Unused for now
   const tCommon = useTranslations('common');
   const tMessages = useTranslations('messages');
 
@@ -289,9 +301,13 @@ export default function RecentProjectsSection({ limit = 4, className }: RecentPr
           <p className="text-destructive mb-4">
             {tMessages('errorLoadingData')}: {error}
           </p>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {tCommon('retry')}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleRefresh}
+            title={tCommon('retry')}
+          >
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </CardContent>
       </Card>
@@ -326,10 +342,10 @@ export default function RecentProjectsSection({ limit = 4, className }: RecentPr
           </Button>
           <Button
             variant="ghost" 
-            size="sm"
+            size="icon"
             onClick={handleRefresh}
             disabled={isLoading}
-            aria-label={tCommon('refresh')}
+            title={tCommon('refresh')}
           >
             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </Button>

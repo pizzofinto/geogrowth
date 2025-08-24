@@ -29,7 +29,8 @@ interface ActionPlanAlertsProps {
 }
 
 /**
- * ActionPlanAlerts - Componente dashboard per mostrare alerts degli action plans
+ * ActionPlanAlerts - Componente dashboard per mostrare alerts degli action plans 
+ * ✅ FIXED: Hook dependencies resolved for stable rendering
  * @param props - Component properties
  * @returns JSX Element
  */
@@ -101,9 +102,14 @@ export function ActionPlanAlerts({
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="mb-4">{error}</AlertDescription>
           </Alert>
-          <Button onClick={handleRefresh} variant="outline" size="sm" className="mt-2">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {t('retry')}
+          <Button 
+            onClick={handleRefresh} 
+            variant="ghost" 
+            size="icon" 
+            className="mt-2"
+            title={t('retry')}
+          >
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </CardContent>
       </Card>
@@ -123,8 +129,9 @@ export function ActionPlanAlerts({
               <Button
                 onClick={handleRefresh}
                 variant="ghost"
-                size="sm"
+                size="icon"
                 disabled={isRefreshing}
+                title={t('retry')}
               >
                 <RefreshCw className={cn(
                   'h-4 w-4',
@@ -170,8 +177,9 @@ export function ActionPlanAlerts({
             <Button
               onClick={handleRefresh}
               variant="ghost"
-              size="sm"
+              size="icon"
               disabled={isRefreshing}
+              title={t('retry')}
             >
               <RefreshCw className={cn(
                 'h-4 w-4',

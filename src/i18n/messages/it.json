@@ -138,7 +138,11 @@
     "componentStatus": "Stato Componenti",
     "milestoneOverview": "Panoramica Milestone",
     "upcomingDeadlines": "Scadenze Imminenti",
-    "quickActions": "Azioni Rapide"
+    "quickActions": "Azioni Rapide",
+    "totalProjects": "Progetti attivi totali",
+    "projectsNeedingAttention": "Progetti che richiedono attenzione",
+    "nextSevenDays": "Nei prossimi 7 giorni",
+    "thisMonth": "Questo mese"
   },
   "projects": {
     "title": "Progetti",

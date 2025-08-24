@@ -6,7 +6,7 @@ export function useSafeTranslations(namespace?: string) {
   const safeT = (key: string, fallback?: string): string => {
     try {
       return t(key);
-    } catch (error) {
+    } catch {
       console.warn(`Missing translation: ${namespace ? `${namespace}.` : ''}${key}`);
       return fallback || key;
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { getColumns, Project } from './columns';
@@ -17,7 +17,17 @@ export default function ProjectSelectionPage() {
   const [statusFilter, setStatusFilter] = useState('Active');
 
   // Genera le colonne con le traduzioni
-    const columns = React.useMemo(() => getColumns(t), [t]);
+  const columns = React.useMemo(() => getColumns(t), [t]);
+
+  // ✅ FIXED: Memoize roles to prevent infinite loops  
+  const rolesString = useMemo(() => {
+    try {
+      return JSON.stringify((roles || []).sort());
+    } catch {
+      return '[]';
+    }
+  }, [roles]);
+  const hasRoles = useMemo(() => roles && roles.length > 0, [roles]);
 
   useEffect(() => {
     document.title = `${t('title')} | GeoGrowth`;
@@ -35,10 +45,11 @@ export default function ProjectSelectionPage() {
       setLoading(false);
     }
 
-    if (!authLoading && user) {
+    if (!authLoading && user && hasRoles) {
       fetchProjects();
     }
-  }, [user, authLoading, roles]);
+  }, [user?.id, authLoading, hasRoles, rolesString, t]);
+  // ✅ FIXED: Using stable references instead of direct roles dependency
 
   useEffect(() => {
     let projects = allProjects;

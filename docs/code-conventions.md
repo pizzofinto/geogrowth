@@ -281,6 +281,79 @@ import { cn } from '@/lib/utils';
 
 ## 🪝 Custom Hooks
 
+### ⚠️ INFINITE LOOP PREVENTION RULES
+
+**CRITICAL**: These rules MUST be followed to prevent infinite re-renders:
+
+#### 1. Dependency Array Rules
+
+```typescript
+// ❌ BAD - causes infinite loops
+useEffect(() => {}, [roles, config, user])
+
+// ✅ GOOD - use stable references
+const rolesString = useMemo(() => JSON.stringify(roles?.sort() || []), [roles])
+const hasRoles = useMemo(() => roles && roles.length > 0, [roles])
+useEffect(() => {}, [rolesString, hasRoles, user?.id])
+```
+
+#### 2. Memoize Complex Conditions
+
+```typescript
+// ❌ BAD
+if (user && roles && roles.length > 0)
+
+// ✅ GOOD
+const isAuthenticated = useMemo(() => user && roles && roles.length > 0, [user, roles])
+```
+
+#### 3. useCallback Dependencies
+
+```typescript
+const fetchData = useCallback(async () => {
+  if (!user?.id || !hasRoles) return
+  // ... fetch logic
+}, [user?.id, hasRoles, config]) // Include everything used inside
+```
+
+#### 4. Prevent Concurrent Async Operations
+
+```typescript
+const [isProcessing, setIsProcessing] = useState(false)
+
+const processData = useCallback(async () => {
+  if (isProcessing) return // Prevent concurrent calls
+  setIsProcessing(true)
+  try {
+    // ... async work
+  } finally {
+    setIsProcessing(false)
+  }
+}, [isProcessing])
+```
+
+#### 5. Stabilize Context Values
+
+```typescript
+const value = useMemo(() => ({
+  user,
+  roles,
+  isLoading
+}), [user, roles, isLoading]) // Prevent context re-creation
+```
+
+#### 🔍 Quick Checklist for Every Hook/Component
+
+- [ ] All objects/arrays in dependencies are memoized
+- [ ] useCallback includes all dependencies
+- [ ] Complex conditions are memoized
+- [ ] Async operations have race condition protection
+- [ ] Context values are memoized
+- [ ] Effects have proper cleanup
+- [ ] No direct object/array comparisons in dependencies
+
+**Key mantra**: "Stable references, complete dependencies, prevent races"
+
 ### Hook Template
 
 ```typescript

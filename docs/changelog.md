@@ -12,6 +12,12 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
 
 ### ✨ Added
 - Dashboard con KPI cards dinamiche
+- **Action Plan Alerts System** (✅ COMPLETED)
+  - ActionPlanAlerts component con tabbed interface
+  - ActionPlanAlertCard con urgency visualization 
+  - useActionPlanAlerts hook con filtering configurabile
+  - Support per overdue, due soon, high priority alerts
+  - Dev-tools test page per development
 - Sistema di autenticazione completo con Supabase Auth
 - Supporto multilingua (IT/EN) con next-intl
 - Sidebar navigation responsiva
@@ -21,12 +27,20 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
 - Database schema completo (20+ tabelle)
 - Row Level Security policies
 - Stored procedures per calcoli automatici
+- UI Components: Tabs, ScrollArea (Radix UI based)
 
 ### 🔄 Changed
 - Migrazione da Pages Router a App Router (Next.js 14)
 - Refactor completo sistema i18n (da custom a next-intl)
 
 ### 🐛 Fixed
+- **CRITICAL FIXES (✅ RESOLVED):**
+  - Infinite loops during login in AuthContext 
+  - Infinite loops in useLanguage hook causing navigation issues
+  - Infinite loops in useRecentProjects hook
+  - Build errors: 13 unused variables/imports resolved
+  - TypeScript any types replaced with proper interfaces  
+  - React hook dependency warnings fixed
 - Risolto problema persistenza lingua dopo refresh
 - Corretto overlap menu mobile su schermi piccoli
 - Fix traduzioni breadcrumbs
@@ -34,8 +48,8 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
 ### 🚧 Work in Progress
 - [ ] Completamento KPI cards con dati reali
 - [ ] Maturity index chart component
-- [ ] Action plan alerts system
 - [ ] Project CRUD operations
+- [ ] Dashboard integration of ActionPlanAlerts component
 
 ---
 

@@ -18,9 +18,8 @@ interface AppShellLayoutProps {
 
 export default async function AppShellLayout({
   children,
-  params,
 }: AppShellLayoutProps) {
-  const { locale } = await params;
+  // const { locale } = await params; // Unused for now
 
   return (
     <AuthProvider>

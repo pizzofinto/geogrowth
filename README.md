@@ -1,4 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌍 GeoGrowth Platform
+
+A comprehensive project management platform built with Next.js 14, Supabase, and TypeScript.
+
+> **For Claude Code Sessions**: See [CLAUDE_SESSIONS.md](./CLAUDE_SESSIONS.md) for session management guide
+
+## 🤖 Claude Code Session Management
+
+For effective Claude Code sessions with context preservation:
+
+```bash
+# Start of each session - get context
+./scripts/session-start.sh
+
+# Or manually check these files:
+cat docs/session-tracker.md    # Latest session info  
+cat docs/progress-tracker.md   # Sprint progress
+```
 
 ## Getting Started
 

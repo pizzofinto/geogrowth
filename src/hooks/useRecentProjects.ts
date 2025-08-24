@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -32,6 +32,9 @@ export function useRecentProjects(limit: number = 4): UseRecentProjectsReturn {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
+  // ✅ FIXED: Memoize limit to prevent recreation
+  const stableLimit = useMemo(() => limit, [limit]);
+
   const fetchRecentProjects = useCallback(async () => {
     if (!user?.id) {
       setProjects([]);
@@ -43,12 +46,12 @@ export function useRecentProjects(limit: number = 4): UseRecentProjectsReturn {
     setError(null);
 
     try {
-      console.log('🔍 Fetching recent projects for user:', user.id, 'limit:', limit);
+      console.log('🔍 Fetching recent projects for user:', user.id, 'limit:', stableLimit);
       
       const { data, error: fetchError } = await supabase
         .rpc('get_recent_projects_for_user', {
           user_id_param: user.id,
-          limit_param: limit
+          limit_param: stableLimit
         });
 
       if (fetchError) {
@@ -66,7 +69,7 @@ export function useRecentProjects(limit: number = 4): UseRecentProjectsReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, limit]);
+  }, [user?.id, stableLimit]); // ✅ FIXED: Use stable limit reference
 
   const updateProjectAccess = useCallback(async (projectId: number) => {
     if (!user?.id) {
@@ -103,8 +106,10 @@ export function useRecentProjects(limit: number = 4): UseRecentProjectsReturn {
 
   // Effect per il caricamento iniziale
   useEffect(() => {
-    fetchRecentProjects();
-  }, [fetchRecentProjects]);
+    if (user?.id) {
+      fetchRecentProjects();
+    }
+  }, [user?.id, stableLimit]); // ✅ FIXED: Remove fetchRecentProjects from dependencies
 
   return {
     projects,

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 
@@ -148,11 +148,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // processAuthUser intentionally not included to prevent infinite loops
 
-  const value = {
+  // ✅ FIXED: Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     user,
     roles,
     isLoading,
-  };
+  }), [user, roles, isLoading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -464,7 +464,7 @@ function DetailItem({
   infoTooltip?: string;
   fullName?: string;
 }) {
-  const t = useTranslations('maturityIndex');
+  // const t = useTranslations('maturityIndex'); // Unused for now
   
   return (
     <div className="space-y-1">

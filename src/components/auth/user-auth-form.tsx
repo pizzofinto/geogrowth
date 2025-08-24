@@ -23,7 +23,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/lib/supabaseClient';
 import { useTranslations } from 'next-intl';
 
-interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
+type UserAuthFormProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
   const router = useRouter();
@@ -121,7 +121,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
       }
 
       const roles = roleData
-        ?.map((item: any) => item.user_roles?.role_name)
+        ?.map((item: { user_roles?: { role_name: string } }) => item.user_roles?.role_name)
         .filter(Boolean) || [];
         
       let destination = '/dashboard'; // Destinazione di default

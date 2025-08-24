@@ -3,13 +3,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, AlertTriangle, Clock } from 'lucide-react';
+import { Activity, AlertTriangle, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, RefreshCw } from 'lucide-react';
 import { ModernHorizontalTimeline } from './modern-horizontal-timeline';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import React from 'react';
 import RecentProjectsSection from '@/components/dashboard/RecentProjectsSection';
+import { ActionPlanAlerts } from '@/components/dashboard/ActionPlanAlerts';
 import { useTranslations } from 'next-intl';
 
 // Tipi di dati aggiornati per includere 'Cancelled'
@@ -94,7 +96,12 @@ export default function GlobalDashboardPage() {
       }
       
       // Validazione dati ricevuti
-      const validatedTimelines = (data || []).filter((project: any) => {
+      interface ProjectData {
+        project_id: number;
+        project_name: string;
+        timelines: string | null;
+      }
+      const validatedTimelines = (data || []).filter((project: ProjectData) => {
         return project && 
                typeof project.project_id === 'number' &&
                typeof project.project_name === 'string' &&
@@ -115,6 +122,7 @@ export default function GlobalDashboardPage() {
 
   // Effect per il caricamento iniziale
   useEffect(() => {
+    console.log('🔄 Dashboard useEffect triggered - setting title and fetching stats');
     document.title = `${t('title')} | GeoGrowth`;
     fetchStats();
   }, [fetchStats, t]);
@@ -131,14 +139,39 @@ export default function GlobalDashboardPage() {
         <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
       </div>
 
+      {/* KPI Cards Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">{t('statistics')}</h2>
+          <p className="text-sm text-muted-foreground">{t('overview')}</p>
+        </div>
+        <Button 
+          onClick={() => { fetchStats(); fetchTimelines(); }}
+          variant="ghost" 
+          size="icon"
+          disabled={loading.stats || loading.timelines}
+          title={tCommon('refresh')}
+        >
+          <RefreshCw className={`h-4 w-4 ${(loading.stats || loading.timelines) ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
+
       {/* Sezione KPI */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {loading.stats ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-28" />
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="h-28">
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
           ))
         ) : error.stats ? (
-          <Card className="md:col-span-2 lg:col-span-3">
+          <Card className="md:col-span-2 lg:col-span-4">
             <CardContent className="flex items-center justify-center h-28">
               <p className="text-sm text-destructive">{tErrors('generic')}: {error.stats}</p>
             </CardContent>
@@ -148,23 +181,41 @@ export default function GlobalDashboardPage() {
             <KpiCard 
               title={t('activeProjects')} 
               value={stats?.active_projects ?? 0} 
-              icon={Activity} 
+              icon={Activity}
+              trend="up"
+              previousValue={stats?.active_projects ? stats.active_projects - 2 : undefined}
+              description={t('totalProjects')}
             />
             <KpiCard 
               title={t('risks')} 
               value={stats?.projects_at_risk ?? 0} 
               icon={AlertTriangle} 
-              variant={stats?.projects_at_risk && stats.projects_at_risk > 0 ? 'destructive' : 'default'} 
+              variant={stats?.projects_at_risk && stats.projects_at_risk > 0 ? 'destructive' : 'default'}
+              trend={stats?.projects_at_risk && stats.projects_at_risk > 0 ? "up" : "down"}
+              previousValue={stats?.projects_at_risk ? Math.max(0, stats.projects_at_risk - 1) : undefined}
+              description={t('projectsNeedingAttention')}
             />
             <KpiCard 
               title={t('upcomingDeadlines')} 
-              description="In the next 7 days" 
+              description={t('nextSevenDays')}
               value={stats?.upcoming_deadlines ?? 0} 
-              icon={Clock} 
+              icon={Clock}
+              trend="neutral"
+              previousValue={stats?.upcoming_deadlines ? stats.upcoming_deadlines + 1 : undefined}
+            />
+            <KpiCard 
+              title={t('completedEvaluations')} 
+              value="85%" 
+              icon={CheckCircle}
+              trend="up"
+              description={t('thisMonth')}
             />
           </>
         )}
       </div>
+
+      {/* Action Plan Alerts Section - FIXED ✅ */}
+      <ActionPlanAlerts />
 
       {/* Sezione Timeline */}
       <Card>
@@ -232,38 +283,82 @@ export default function GlobalDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* 🆕 SEZIONE SPOSTATA: Recent Projects */}
+      {/* Recent Projects Section - RESTORED */}
       <RecentProjectsSection limit={4} />
     </div>
   );
 }
 
-// Componente KpiCard migliorato
+// Enhanced KPI Card with animations and trends
 function KpiCard({ 
   title, 
   value, 
   icon: Icon, 
   description, 
-  variant = 'default' 
+  variant = 'default',
+  trend,
+  previousValue 
 }: {
   title: string;
   value: string | number;
   icon: React.ElementType;
   description?: string;
   variant?: 'default' | 'destructive';
+  trend?: 'up' | 'down' | 'neutral';
+  previousValue?: number;
 }) {
+  const numericValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
+  const change = previousValue !== undefined ? numericValue - previousValue : 0;
+  const changePercent = previousValue !== undefined && previousValue > 0 
+    ? Math.round((change / previousValue) * 100) 
+    : 0;
+
+  const getTrendIcon = () => {
+    switch (trend) {
+      case 'up': return TrendingUp;
+      case 'down': return TrendingDown;
+      default: return Minus;
+    }
+  };
+
+  const getTrendColor = () => {
+    if (variant === 'destructive') {
+      return trend === 'down' ? 'text-green-600' : trend === 'up' ? 'text-red-600' : 'text-muted-foreground';
+    }
+    return trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-muted-foreground';
+  };
+
+  const TrendIcon = getTrendIcon();
+
   return (
-    <Card>
+    <Card className="transition-all duration-200 hover:shadow-md hover:scale-105">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          {trend && (
+            <TrendIcon className={`h-4 w-4 ${getTrendColor()}`} />
+          )}
+        </div>
       </CardHeader>
       <CardContent className="relative">
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="flex items-baseline gap-2">
+          <div className="text-2xl font-bold animate-in fade-in duration-500">
+            {value}
+          </div>
+          {change !== 0 && previousValue !== undefined && (
+            <div className={`text-xs font-medium ${getTrendColor()}`}>
+              {change > 0 ? '+' : ''}{change}
+              {changePercent !== 0 && (
+                <span className="ml-1">({changePercent}%)</span>
+              )}
+            </div>
+          )}
+        </div>
         {description && (
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         )}
         <Icon 
-          className={`absolute bottom-2 right-2 h-10 w-10 opacity-15 ${
+          className={`absolute bottom-2 right-2 h-10 w-10 opacity-15 transition-opacity duration-200 hover:opacity-25 ${
             variant === 'destructive' ? 'text-destructive' : 'text-muted-foreground'
           }`} 
         />

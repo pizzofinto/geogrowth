@@ -70,7 +70,7 @@ const sidebarVariants = cva(
 );
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof sidebarVariants> {}
 const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
-  ({ className, collapsible, children, ...props }, ref) => {
+  ({ className, children, ...props }, ref) => {
     const { isCollapsed } = useSidebar();
     return (
       <aside ref={ref} className={cn(sidebarVariants({ collapsible: isCollapsed ? 'icon' : 'full' }), className)} {...props}>

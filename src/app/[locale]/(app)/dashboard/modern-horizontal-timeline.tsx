@@ -48,27 +48,27 @@ const getMilestoneStatus = (milestone: Milestone, today: Date) => {
   }
 };
 
-// Configurazione colori shadcn/ui
-const statusConfig = {
-  completed: {
-    className: 'fill-primary stroke-primary'
-  },
-  cancelled: {
-    className: 'fill-muted stroke-muted-foreground'
-  },
-  delayed: {
-    className: 'fill-destructive stroke-destructive'
-  },
-  overdue: {
-    className: 'fill-destructive stroke-destructive'
-  },
-  'in-progress': {
-    className: 'fill-warning stroke-warning'
-  },
-  planned: {
-    className: 'fill-background stroke-border'
-  }
-};
+// Configuration for milestone status styles - keeping for future use  
+// const statusConfig = {
+//   completed: {
+//     className: 'fill-primary stroke-primary'
+//   },
+//   cancelled: {
+//     className: 'fill-muted stroke-muted-foreground'
+//   },
+//   delayed: {
+//     className: 'fill-destructive stroke-destructive'
+//   },
+//   overdue: {
+//     className: 'fill-destructive stroke-destructive'
+//   },
+//   'in-progress': {
+//     className: 'fill-warning stroke-warning'
+//   },
+//   planned: {
+//     className: 'fill-background stroke-border'
+//   }
+// };
 
 // Funzione per calcolare giorni rimanenti
 const getDaysRemaining = (targetDate: Date, today: Date): string => {
@@ -256,7 +256,7 @@ export function ModernHorizontalTimeline({
             if (position < 0 || position > 100) return null;
             
             const status = getMilestoneStatus(milestone, today);
-            const config = statusConfig[status];
+            // const config = statusConfig[status]; // Unused for now
             const daysRemaining = getDaysRemaining(milestoneDate, today);
             
             return (

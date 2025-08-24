@@ -138,7 +138,11 @@
     "componentStatus": "Component Status",
     "milestoneOverview": "Milestone Overview",
     "upcomingDeadlines": "Upcoming Deadlines",
-    "quickActions": "Quick Actions"
+    "quickActions": "Quick Actions",
+    "totalProjects": "Total active projects",
+    "projectsNeedingAttention": "Projects needing attention",
+    "nextSevenDays": "In the next 7 days",
+    "thisMonth": "This month"
   },
   "projects": {
     "title": "Projects",

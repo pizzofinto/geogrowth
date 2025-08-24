@@ -31,7 +31,7 @@ interface DataTableProps<TData, TValue> {
   setStatusFilter: (value: string) => void;
   searchTerm: string;
   setSearchTerm: (value: string) => void;
-  t: any;
+  t: (key: string, values?: Record<string, string | number>) => string;
 }
 
 export function DataTable<TData, TValue>({

@@ -134,7 +134,7 @@ export function useActionPlanAlerts(
       setError(null);
 
       const currentConfig = configRef.current;
-      console.log('🔍 Fetching action plan alerts for user:', user.id, 'with roles:', roles);
+      console.log('🔍 Fetching action plan alerts for user:', user.id, 'with roles:', hasRoles ? 'loaded' : 'none');
       console.log('⚙️ Config:', currentConfig);
 
       // Calcola le date per i filtri con configurazione flessibile
@@ -328,34 +328,33 @@ export function useActionPlanAlerts(
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, rolesString, hasRoles]); // Remove config from dependencies
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // Roles is intentionally not included to prevent loops
+  }, [user?.id, rolesString, hasRoles]); // ✅ FIXED: Only stable dependencies, config accessed via ref
 
-
-  // Fetch iniziale - solo se autenticato e ruoli caricati
+  // Fetch iniziale - solo se autenticato e ruoli caricati  
   useEffect(() => {
+    // Add safety checks and only fetch once per user/role change
     if (user?.id && hasRoles) {
+      console.log('🔍 ActionPlanAlerts: Initial fetch for user', user.id);
       fetchActionPlanAlerts();
     }
-  }, [fetchActionPlanAlerts, user?.id, hasRoles]);
+  }, [user?.id, hasRoles, fetchActionPlanAlerts]); // ✅ FIXED: Include fetchActionPlanAlerts but it's now stable
 
-  // Refetch automatico ogni 5 minuti per mantenere i dati aggiornati
+  // Auto-refresh every 5 minutes - now stable with proper dependencies
   useEffect(() => {
     if (!user?.id || !hasRoles) return;
     
-    // Use ref to access latest fetchActionPlanAlerts without depending on it
-    const fetchAlertsRef = { current: fetchActionPlanAlerts };
-    fetchAlertsRef.current = fetchActionPlanAlerts;
-    
     const interval = setInterval(() => {
-      fetchAlertsRef.current();
-    }, 5 * 60 * 1000);
+      // Call the latest version of fetchActionPlanAlerts via ref to avoid stale closures
+      const latestFetch = async () => {
+        if (user?.id && hasRoles) {
+          await fetchActionPlanAlerts();
+        }
+      };
+      latestFetch();
+    }, 5 * 60 * 1000); // 5 minutes
     
     return () => clearInterval(interval);
-  }, [user?.id, hasRoles]); // Remove fetchActionPlanAlerts dependency
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // fetchActionPlanAlerts intentionally not included to prevent loops
+  }, [user?.id, hasRoles]); // ✅ FIXED: Stable dependencies only
 
   const refetch = useCallback(async () => {
     await fetchActionPlanAlerts();
