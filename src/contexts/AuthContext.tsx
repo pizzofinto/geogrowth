@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 
@@ -23,8 +23,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // const [isProcessing, setIsProcessing] = useState(false); // Using ref instead
+
+  // Use useRef to prevent dependency loops and track processing state
+  const isProcessingRef = useRef(false);
 
   const processAuthUser = useCallback(async (authUser: User | null) => {
+    // Prevent concurrent processing using ref instead of state
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    
     if (authUser) {
       try {
         // 1. Recuperiamo il profilo dalla tabella 'users' (INCLUSA LA LINGUA!)
@@ -51,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // 3. Mappiamo i ruoli in modo sicuro
         const userRoles: string[] = [];
         if (rolesData && Array.isArray(rolesData)) {
-          rolesData.forEach((item: any) => {
+          rolesData.forEach((item: { user_roles?: { role_name: string } }) => {
             if (item?.user_roles?.role_name) {
               userRoles.push(item.user_roles.role_name);
             }
@@ -90,24 +98,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     setIsLoading(false);
-  }, []);
+    isProcessingRef.current = false;
+  }, []); // Remove isProcessing from dependencies
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Get initial session first to avoid race condition
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Error getting initial session:', error);
-          setIsLoading(false);
+          if (isMounted) setIsLoading(false);
           return;
         }
         
-        // Process initial session
-        await processAuthUser(session?.user ?? null);
+        // Process initial session only if component is still mounted
+        if (isMounted) {
+          await processAuthUser(session?.user ?? null);
+        }
       } catch (error) {
         console.error('Error during initial session setup:', error);
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
@@ -121,13 +134,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🔍 Auth state change:', event, !!session?.user);
       
       const authUser = session?.user ?? null;
-      await processAuthUser(authUser);
+      // Only process if component is still mounted
+      if (isMounted) {
+        await processAuthUser(authUser);
+      }
     });
 
     return () => {
+      isMounted = false;
       subscription?.unsubscribe();
     };
-  }, [processAuthUser]);
+  }, []); // Remove processAuthUser dependency to prevent loops
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // processAuthUser intentionally not included to prevent infinite loops
 
   const value = {
     user,

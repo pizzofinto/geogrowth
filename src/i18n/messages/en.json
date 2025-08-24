@@ -79,6 +79,39 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "actionPlans": {
+      "title": "Action Plan Alerts",
+      "overdue": "Overdue",
+      "dueSoon": "Due Soon",
+      "highPriority": "High Priority",
+      "project": "Project",
+      "component": "Component",
+      "noResponsible": "No responsible assigned",
+      "unknownProject": "Unknown Project",
+      "unknownComponent": "Unknown Component",
+      "unknownActionType": "Unknown Action Type",
+      "priority": {
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "daysOverdue": "{days} days overdue",
+      "dueToday": "Due today",
+      "dueTomorrow": "Due tomorrow",
+      "dueInDays": "Due in {days} days",
+      "viewDetails": "View Details",
+      "viewAll": "View All",
+      "viewAllActionPlans": "View All Action Plans",
+      "retry": "Retry",
+      "noAlerts": {
+        "title": "No Active Alerts",
+        "description": "All action plans are on track or completed."
+      },
+      "noOverdueActions": "No overdue action plans.",
+      "noDueSoonActions": "No action plans due soon.",
+      "noHighPriorityActions": "No high priority action plans."
+    },
     "welcome": "Welcome back",
     "recentProjects": "Recent Projects",
     "lastAccessed": "Last accessed",

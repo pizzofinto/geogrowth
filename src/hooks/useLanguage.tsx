@@ -2,7 +2,7 @@
 
 import { useLocale } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useTransition, useContext } from 'react';
+import { useState, useTransition, useContext, useRef } from 'react';
 import { Locale, locales } from '@/i18n/config';
 import { supabase } from '@/lib/supabaseClient';
 import { AuthContext } from '@/contexts/AuthContext';
@@ -15,6 +15,10 @@ export function useLanguage() {
   const authContext = useContext(AuthContext);
   const [isPending, startTransition] = useTransition();
   const [isChangingLocale, setIsChangingLocale] = useState(false);
+  
+  // Track ongoing language changes to prevent loops
+  const isChangingRef = useRef(false);
+  const lastLocaleChangeRef = useRef<string>('');
 
   const setLocale = async (newLocale: Locale) => {
     console.log('🌍 Changing language from', locale, 'to', newLocale);
@@ -29,6 +33,14 @@ export function useLanguage() {
       return;
     }
 
+    // Prevent rapid successive changes and loops
+    if (isChangingRef.current || lastLocaleChangeRef.current === newLocale) {
+      console.log('⚠️ Language change already in progress or same locale recently changed');
+      return;
+    }
+
+    isChangingRef.current = true;
+    lastLocaleChangeRef.current = newLocale;
     setIsChangingLocale(true);
     
     try {
@@ -57,6 +69,9 @@ export function useLanguage() {
       
       console.log('🚀 Navigating from', pathname, 'to', newPath);
       
+      // Add delay to prevent rapid navigation and allow for proper cleanup
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Usa startTransition per il cambio di locale
       startTransition(() => {
         router.replace(newPath);
@@ -65,7 +80,15 @@ export function useLanguage() {
     } catch (error) {
       console.error('❌ Errore nel cambio lingua:', error);
     } finally {
-      setIsChangingLocale(false);
+      // Reset flags after a delay to allow navigation to complete
+      setTimeout(() => {
+        setIsChangingLocale(false);
+        isChangingRef.current = false;
+        // Clear last locale change after longer delay
+        setTimeout(() => {
+          lastLocaleChangeRef.current = '';
+        }, 2000);
+      }, 500);
     }
   };
 

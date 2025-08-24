@@ -79,6 +79,39 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "actionPlans": {
+      "title": "Avvisi Action Plan",
+      "overdue": "In Ritardo",
+      "dueSoon": "In Scadenza",
+      "highPriority": "Alta Priorità",
+      "project": "Progetto",
+      "component": "Componente",
+      "noResponsible": "Nessun responsabile assegnato",
+      "unknownProject": "Progetto Sconosciuto",
+      "unknownComponent": "Componente Sconosciuto",
+      "unknownActionType": "Tipo Azione Sconosciuto",
+      "priority": {
+        "critical": "Critica",
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Bassa"
+      },
+      "daysOverdue": "{days} giorni di ritardo",
+      "dueToday": "Scade oggi",
+      "dueTomorrow": "Scade domani",
+      "dueInDays": "Scade tra {days} giorni",
+      "viewDetails": "Visualizza Dettagli",
+      "viewAll": "Visualizza Tutti",
+      "viewAllActionPlans": "Visualizza Tutti gli Action Plan",
+      "retry": "Riprova",
+      "noAlerts": {
+        "title": "Nessun Avviso Attivo",
+        "description": "Tutti gli action plan sono in linea o completati."
+      },
+      "noOverdueActions": "Nessun action plan in ritardo.",
+      "noDueSoonActions": "Nessun action plan in scadenza.",
+      "noHighPriorityActions": "Nessun action plan ad alta priorità."
+    },
     "welcome": "Bentornato",
     "recentProjects": "Progetti Recenti",
     "lastAccessed": "Ultimo accesso",

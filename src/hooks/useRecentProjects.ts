@@ -88,14 +88,18 @@ export function useRecentProjects(limit: number = 4): UseRecentProjectsReturn {
         throw new Error(`Failed to update project access: ${error.message}`);
       } else {
         console.log('✅ Project access updated successfully');
-        // Ricarica la lista dopo aver aggiornato l'accesso
-        await fetchRecentProjects();
+        // Use setTimeout to avoid circular dependency and batch updates
+        setTimeout(() => {
+          fetchRecentProjects();
+        }, 100);
       }
     } catch (err) {
       console.error('❌ Error updating project access:', err);
       // Non bloccare l'UI per questo errore, continua con la navigazione
     }
-  }, [user?.id, fetchRecentProjects]);
+  }, [user?.id]); // Remove fetchRecentProjects dependency
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // fetchRecentProjects intentionally not included to prevent circular dependency
 
   // Effect per il caricamento iniziale
   useEffect(() => {
