@@ -10,11 +10,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import React from 'react';
 
 export function Breadcrumbs() {
   const pathname = usePathname();
+  const locale = useLocale();
   const tNavigation = useTranslations('navigation');
   const tBreadcrumbs = useTranslations('breadcrumbs');
   
@@ -82,11 +83,11 @@ export function Breadcrumbs() {
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link href="/dashboard">{tNavigation('dashboard')}</Link>
+            <Link href={`/${locale}/dashboard`}>{tNavigation('dashboard')}</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         {cleanSegments.map((segment, index) => {
-          const href = `/${cleanSegments.slice(0, index + 1).join('/')}`;
+          const href = `/${locale}/${cleanSegments.slice(0, index + 1).join('/')}`;
           const isLast = index === cleanSegments.length - 1;
           const label = getSegmentLabel(segment);
 

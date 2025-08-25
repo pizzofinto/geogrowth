@@ -3,6 +3,12 @@
 # 🤖 Claude Code Session Starter
 # Run this script at the start of each Claude Code session
 
+# Get the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Go to project root (one level up from scripts/)
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_ROOT"
+
 echo "🚀 CLAUDE CODE SESSION CONTEXT"
 echo "=============================="
 echo ""
@@ -15,7 +21,7 @@ echo ""
 
 echo "📋 LAST SESSION SUMMARY:"
 echo "------------------------"
-head -30 docs/session-tracker.md | grep -A 10 "## 📋 CURRENT SESSION STATUS"
+grep -A 15 "## 📋 CURRENT SESSION STATUS" docs/session-tracker.md | head -20
 echo ""
 
 echo "🎯 NEXT PRIORITIES:"
