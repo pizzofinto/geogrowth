@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, Clock, TrendingUp, RefreshCw, ChevronRight, Settings } from 'lucide-react';
+import { AlertTriangle, Clock, TrendingUp, RefreshCw, ChevronRight, Settings, Grid3X3, List } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,7 @@ export function ActionPlanAlerts({
   const t = useTranslations('dashboard.actionPlans');
   const { data, isLoading, error, refetch } = useActionPlanAlerts(config);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // ✅ FIXED: useCallback per prevenire infinite loop
   const handleRefresh = useCallback(async () => {
@@ -168,75 +169,91 @@ export function ActionPlanAlerts({
 
   return (
     <Card className={className}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">
-            {t('title')}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleRefresh}
-              variant="ghost"
-              size="icon"
-              disabled={isRefreshing}
-              title={t('retry')}
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardTitle className="text-lg font-semibold">
+          {t('title')}
+        </CardTitle>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            disabled={isRefreshing}
+            aria-label="Grid View"
+          >
+            <Grid3X3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            disabled={isRefreshing}
+            aria-label="List View"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={handleRefresh}
+            variant="ghost"
+            size="icon"
+            disabled={isRefreshing}
+            title={t('retry')}
+          >
+            <RefreshCw className={cn(
+              'h-4 w-4',
+              isRefreshing && 'animate-spin'
+            )} />
+          </Button>
+          {config && (
+            <Badge 
+              variant="outline" 
+              className={cn(
+                "text-xs",
+                onConfigClick && "cursor-pointer hover:bg-muted/50 transition-colors"
+              )}
+              onClick={onConfigClick}
             >
-              <RefreshCw className={cn(
-                'h-4 w-4',
-                isRefreshing && 'animate-spin'
-              )} />
+              <Settings className="h-3 w-3 mr-1" />
+              Custom Config
+            </Badge>
+          )}
+          {onViewAllActionPlans && (
+            <Button onClick={onViewAllActionPlans} variant="outline" size="sm">
+              {t('viewAll')}
+              <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
-            {config && (
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  "text-xs",
-                  onConfigClick && "cursor-pointer hover:bg-muted/50 transition-colors"
-                )}
-                onClick={onConfigClick}
-              >
-                <Settings className="h-3 w-3 mr-1" />
-                Custom Config
-              </Badge>
-            )}
-            {onViewAllActionPlans && (
-              <Button onClick={onViewAllActionPlans} variant="outline" size="sm">
-                {t('viewAll')}
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            )}
-          </div>
+          )}
         </div>
       </CardHeader>
 
       <CardContent>
-        {/* Statistics Summary */}
+        {/* Statistics Summary - Clean white cards with shadows */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-500">
-            <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-background border hover:shadow-md transition-shadow">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
             <div>
               <p className="text-xs text-muted-foreground">{t('overdue')}</p>
-              <p className="text-lg font-semibold text-red-600 dark:text-red-400">
+              <p className="text-lg font-semibold text-foreground">
                 {data.overdueCount}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-background border hover:shadow-md transition-shadow">
             <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
             <div>
               <p className="text-xs text-muted-foreground">{t('dueSoon')}</p>
-              <p className="text-lg font-semibold text-orange-600 dark:text-orange-400">
+              <p className="text-lg font-semibold text-foreground">
                 {data.dueSoonCount}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-background border hover:shadow-md transition-shadow">
             <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <div>
               <p className="text-xs text-muted-foreground">{t('highPriority')}</p>
-              <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+              <p className="text-lg font-semibold text-foreground">
                 {data.highPriorityCount}
               </p>
             </div>
@@ -274,9 +291,11 @@ export function ActionPlanAlerts({
 
           <TabsContent value="overdue">
             <ScrollArea className="h-[300px]">
-              <div className="space-y-3 pr-4">
+              <div className={cn(
+                viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-4 pr-4" : "space-y-3 pr-4"
+              )}>
                 {data.overdue.length === 0 ? (
-                  <div className="text-center py-8">
+                  <div className="text-center py-8 col-span-full">
                     <p className="text-sm text-muted-foreground">
                       {t('noOverdueActions')}
                     </p>
@@ -287,6 +306,7 @@ export function ActionPlanAlerts({
                       key={actionPlan.id}
                       actionPlan={actionPlan}
                       alertType="overdue"
+                      viewMode={viewMode}
                       onViewDetails={handleViewDetails}
                     />
                   ))
@@ -297,9 +317,11 @@ export function ActionPlanAlerts({
 
           <TabsContent value="dueSoon">
             <ScrollArea className="h-[300px]">
-              <div className="space-y-3 pr-4">
+              <div className={cn(
+                viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-4 pr-4" : "space-y-3 pr-4"
+              )}>
                 {data.dueSoon.length === 0 ? (
-                  <div className="text-center py-8">
+                  <div className="text-center py-8 col-span-full">
                     <p className="text-sm text-muted-foreground">
                       {t('noDueSoonActions')}
                     </p>
@@ -310,6 +332,7 @@ export function ActionPlanAlerts({
                       key={actionPlan.id}
                       actionPlan={actionPlan}
                       alertType="dueSoon"
+                      viewMode={viewMode}
                       onViewDetails={handleViewDetails}
                     />
                   ))
@@ -320,9 +343,11 @@ export function ActionPlanAlerts({
 
           <TabsContent value="highPriority">
             <ScrollArea className="h-[300px]">
-              <div className="space-y-3 pr-4">
+              <div className={cn(
+                viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-4 pr-4" : "space-y-3 pr-4"
+              )}>
                 {data.highPriority.length === 0 ? (
-                  <div className="text-center py-8">
+                  <div className="text-center py-8 col-span-full">
                     <p className="text-sm text-muted-foreground">
                       {t('noHighPriorityActions')}
                     </p>
@@ -333,6 +358,7 @@ export function ActionPlanAlerts({
                       key={actionPlan.id}
                       actionPlan={actionPlan}
                       alertType="highPriority"
+                      viewMode={viewMode}
                       onViewDetails={handleViewDetails}
                     />
                   ))
