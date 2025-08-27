@@ -31,7 +31,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const processAuthUser = useCallback(async (authUser: User | null) => {
     // Prevent concurrent processing using ref instead of state
     if (isProcessingRef.current) return;
+    
+    // ✅ FIXED: Get localStorage values locally to prevent instability
+    const processKey = 'authContext_processing';
+    const currentlyProcessing = typeof window !== 'undefined' 
+      ? localStorage.getItem(processKey) 
+      : null;
+    
+    // Check if another tab is processing auth (within 10 seconds)
+    if (currentlyProcessing && Date.now() - parseInt(currentlyProcessing) < 10000) {
+      console.log('🚫 Another tab is processing auth, skipping...');
+      return;
+    }
+    
     isProcessingRef.current = true;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(processKey, Date.now().toString());
+    }
     
     if (authUser) {
       try {
@@ -109,6 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     setIsLoading(false);
     isProcessingRef.current = false;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authContext_processing');
+    }
   }, []); // ✅ FIXED: Still empty deps but localStorage access is now stable
 
   useEffect(() => {

@@ -40,6 +40,7 @@ interface ActionPlan {
 interface ActionPlanAlertCardProps {
   actionPlan: ActionPlan;
   alertType: 'overdue' | 'dueSoon' | 'highPriority';
+  viewMode?: 'grid' | 'list';
   className?: string;
   onViewDetails?: (id: number) => void;
 }
@@ -51,7 +52,8 @@ interface ActionPlanAlertCardProps {
  */
 export function ActionPlanAlertCard({ 
   actionPlan, 
-  alertType, 
+  alertType,
+  viewMode = 'grid',
   className,
   onViewDetails 
 }: ActionPlanAlertCardProps) {
@@ -67,40 +69,36 @@ export function ActionPlanAlertCard({
   const diffTime = dueDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  // Determina il colore e l'icona in base al tipo di alert
+  // Determina l'icona e variant badge in base al tipo di alert
   const getAlertConfig = () => {
     switch (alertType) {
       case 'overdue':
         return {
-          color: 'destructive',
           icon: AlertTriangle,
-          bgColor: 'bg-red-50 dark:bg-red-950/20',
-          borderColor: 'border-red-500',
-          textColor: 'text-red-600 dark:text-red-400',
+          badgeVariant: 'destructive' as const,
+          badgeText: t('overdue'),
+          iconColor: 'text-destructive',
         };
       case 'dueSoon':
         return {
-          color: 'orange',
           icon: Clock,
-          bgColor: 'bg-orange-50 dark:bg-orange-950/20',
-          borderColor: 'border-orange-200 dark:border-orange-800',
-          textColor: 'text-orange-600 dark:text-orange-400',
+          badgeVariant: 'secondary' as const,
+          badgeText: t('dueSoon'),
+          iconColor: 'text-orange-600 dark:text-orange-400',
         };
       case 'highPriority':
         return {
-          color: 'blue',
           icon: AlertTriangle,
-          bgColor: 'bg-blue-50 dark:bg-blue-950/20',
-          borderColor: 'border-blue-200 dark:border-blue-800',
-          textColor: 'text-blue-600 dark:text-blue-400',
+          badgeVariant: 'default' as const,
+          badgeText: t('highPriority'),
+          iconColor: 'text-blue-600 dark:text-blue-400',
         };
       default:
         return {
-          color: 'secondary',
           icon: Clock,
-          bgColor: 'bg-secondary/10',
-          borderColor: 'border-secondary/20',
-          textColor: 'text-muted-foreground',
+          badgeVariant: 'outline' as const,
+          badgeText: 'Alert',
+          iconColor: 'text-muted-foreground',
         };
     }
   };
@@ -141,24 +139,104 @@ export function ActionPlanAlertCard({
     }
   };
 
+  // Supporto per modalità lista
+  if (viewMode === 'list') {
+    return (
+      <Card className={cn(
+        'transition-all duration-200 hover:shadow-md cursor-pointer bg-background',
+        className
+      )} onClick={() => onViewDetails && onViewDetails(actionPlan.id)}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <IconComponent className={cn('h-4 w-4', config.iconColor)} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant={config.badgeVariant} className="text-xs">
+                    {config.badgeText}
+                  </Badge>
+                  <h3 className="font-semibold text-sm truncate">
+                    {actionPlan.action_type?.action_type_name || t('unknownActionType')}
+                  </h3>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">
+                  {actionPlan.action_plan_description}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4 text-xs">
+              <div className="text-center">
+                <p className="font-semibold">
+                  {format(dueDate, 'dd MMM', { locale: dateLocale })}
+                </p>
+                <p className="text-xs text-muted-foreground">{getDaysMessage()}</p>
+              </div>
+              <Badge variant={getPriorityVariant(actionPlan.priority_level)} className="text-xs">
+                {getPriorityText(actionPlan.priority_level)}
+              </Badge>
+              {/* Action button aligned with RecentProjects list view */}
+              {onViewDetails && (
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="ml-2" 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    onViewDetails(actionPlan.id);
+                  }}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Modalità grid (default)
   return (
     <Card className={cn(
-      'transition-all duration-200 hover:shadow-md cursor-pointer',
-      config.bgColor,
-      config.borderColor,
+      'transition-all duration-200 hover:shadow-lg cursor-pointer bg-background',
       className
-    )} onClick={() => onViewDetails(actionPlan.id)}>
+    )} onClick={() => onViewDetails && onViewDetails(actionPlan.id)}>
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <IconComponent className={cn('h-4 w-4', config.textColor)} />
-            <CardTitle className="text-sm font-medium line-clamp-1">
-              {actionPlan.action_type?.action_type_name || t('unknownActionType')}
-            </CardTitle>
+        <div className="flex flex-col gap-2">
+          {/* First row: Alert badge and action button (aligned with RecentProjects) */}
+          <div className="flex items-center justify-between gap-2">
+            <Badge variant={config.badgeVariant} className="shrink-0 text-xs">
+              {config.badgeText}
+            </Badge>
+            {onViewDetails && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  onViewDetails(actionPlan.id);
+                }} 
+                className="shrink-0 min-w-0"
+              >
+                <span className="hidden md:inline text-xs">{t('viewDetails')}</span>
+                <ArrowRight className="h-3 w-3 md:ml-1" />
+              </Button>
+            )}
           </div>
-          <Badge variant={getPriorityVariant(actionPlan.priority_level)} className="text-xs shrink-0">
-            {getPriorityText(actionPlan.priority_level)}
-          </Badge>
+          
+          {/* Second row: Title and priority */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <IconComponent className={cn('h-4 w-4', config.iconColor)} />
+              <CardTitle className="text-sm font-medium line-clamp-1">
+                {actionPlan.action_type?.action_type_name || t('unknownActionType')}
+              </CardTitle>
+            </div>
+            <Badge variant={getPriorityVariant(actionPlan.priority_level)} className="text-xs shrink-0">
+              {getPriorityText(actionPlan.priority_level)}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
 
@@ -196,10 +274,7 @@ export function ActionPlanAlertCard({
               <Calendar className="h-3 w-3" />
               <span>{format(dueDate, 'dd MMM yyyy', { locale: dateLocale })}</span>
             </div>
-            <span className={cn(
-              'font-medium text-xs',
-              config.textColor
-            )}>
+            <span className="font-medium text-xs text-muted-foreground">
               {getDaysMessage()}
             </span>
           </div>
@@ -212,21 +287,6 @@ export function ActionPlanAlertCard({
           )}
         </div>
 
-        {/* Pulsante azione */}
-        {onViewDetails && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full mt-3 h-8"
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewDetails(actionPlan.id);
-            }}
-          >
-            <span className="text-xs">{t('viewDetails')}</span>
-            <ArrowRight className="h-3 w-3 ml-1" />
-          </Button>
-        )}
       </CardContent>
     </Card>
   );

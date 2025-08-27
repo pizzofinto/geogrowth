@@ -331,7 +331,7 @@ function KpiCard({
   const TrendIcon = getTrendIcon();
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-md hover:scale-105">
+    <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -342,7 +342,7 @@ function KpiCard({
       </CardHeader>
       <CardContent className="relative">
         <div className="flex items-baseline gap-2">
-          <div className="text-2xl font-bold animate-in fade-in duration-500">
+          <div className="text-2xl font-bold">
             {value}
           </div>
           {change !== 0 && previousValue !== undefined && (

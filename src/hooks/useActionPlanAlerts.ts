@@ -121,12 +121,30 @@ export function useActionPlanAlerts(
   const configRef = useRef(config);
   configRef.current = config;
 
-  const fetchActionPlanAlerts = useCallback(async () => {
+  const fetchActionPlanAlerts = useCallback(async (force = false) => {
     // Non procedere se l'utente non è autenticato o se i ruoli non sono ancora caricati
     if (!user?.id || !hasRoles) {
       setData(null);
       setIsLoading(false);
       return;
+    }
+
+    // Light coordination: only prevent rapid successive calls, allow initial loads
+    if (!force) {
+      const fetchKey = 'actionPlanAlerts_fetching';
+      const currentlyFetching = typeof window !== 'undefined' 
+        ? localStorage.getItem(fetchKey) 
+        : null;
+      
+      // Very short window (500ms) - just to prevent rapid fire calls
+      if (currentlyFetching && Date.now() - parseInt(currentlyFetching) < 500) {
+        console.log('🚫 Rate limiting: Another tab fetched very recently, skipping...');
+        return;
+      }
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(fetchKey, Date.now().toString());
+      }
     }
 
     try {
@@ -327,6 +345,10 @@ export function useActionPlanAlerts(
       setError(err instanceof Error ? err.message : 'Errore nel caricamento degli alerts');
     } finally {
       setIsLoading(false);
+      // Clear the fetch lock
+      if (!force && typeof window !== 'undefined') {
+        localStorage.removeItem('actionPlanAlerts_fetching');
+      }
     }
   }, [user?.id, rolesString, hasRoles]); // ✅ FIXED: Only stable dependencies, config accessed via ref
 
@@ -339,25 +361,50 @@ export function useActionPlanAlerts(
     }
   }, [user?.id, hasRoles, fetchActionPlanAlerts]); // ✅ FIXED: Include fetchActionPlanAlerts but it's now stable
 
-  // Auto-refresh every 5 minutes - now stable with proper dependencies
+  // Auto-refresh every 5 minutes - with multi-tab coordination
   useEffect(() => {
     if (!user?.id || !hasRoles) return;
     
+    // Use a unique identifier to prevent multiple tabs from refreshing simultaneously
+    const tabId = Math.random().toString(36).substring(7);
+    const storageKey = 'actionPlanAlerts_lastRefresh';
+    
     const interval = setInterval(() => {
-      // Call the latest version of fetchActionPlanAlerts via ref to avoid stale closures
-      const latestFetch = async () => {
-        if (user?.id && hasRoles) {
-          await fetchActionPlanAlerts();
+      // ✅ FIXED: Safe localStorage access with SSR check
+      const lastRefresh = typeof window !== 'undefined' 
+        ? localStorage.getItem(storageKey) 
+        : null;
+      const now = Date.now();
+      const thirtySecondsAgo = now - 30000;
+      
+      if (!lastRefresh || parseInt(lastRefresh) < thirtySecondsAgo) {
+        // Set our refresh timestamp to coordinate with other tabs
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, now.toString());
         }
-      };
-      latestFetch();
+        
+        // Call the latest version of fetchActionPlanAlerts
+        const latestFetch = async () => {
+          if (user?.id && hasRoles) {
+            console.log(`🔄 Tab ${tabId}: Refreshing action plan alerts`);
+            await fetchActionPlanAlerts();
+          }
+        };
+        latestFetch();
+      } else {
+        console.log(`⏭️ Tab ${tabId}: Skipping refresh, another tab refreshed recently`);
+      }
     }, 5 * 60 * 1000); // 5 minutes
     
-    return () => clearInterval(interval);
-  }, [user?.id, hasRoles]); // ✅ FIXED: Stable dependencies only
+    return () => {
+      clearInterval(interval);
+      console.log(`🧹 Tab ${tabId}: Cleaned up action plan alerts interval`);
+    };
+  }, [user?.id, hasRoles, fetchActionPlanAlerts]); // ✅ FIXED: Stable dependencies only
 
   const refetch = useCallback(async () => {
-    await fetchActionPlanAlerts();
+    // Force refetch when explicitly requested by user
+    await fetchActionPlanAlerts(true);
   }, [fetchActionPlanAlerts]);
 
   return {
