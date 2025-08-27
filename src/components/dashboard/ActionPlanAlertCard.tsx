@@ -139,43 +139,41 @@ export function ActionPlanAlertCard({
     }
   };
 
-  // Supporto per modalità lista
+  // List View (Standard Pattern)
   if (viewMode === 'list') {
     return (
       <Card className={cn(
-        'transition-all duration-200 hover:shadow-md cursor-pointer bg-background',
+        'hover:shadow-md transition-shadow cursor-pointer bg-background',
         className
       )} onClick={() => onViewDetails && onViewDetails(actionPlan.id)}>
         <CardContent className="p-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <IconComponent className={cn('h-4 w-4', config.iconColor)} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant={config.badgeVariant} className="text-xs">
-                    {config.badgeText}
-                  </Badge>
-                  <h3 className="font-semibold text-sm truncate">
-                    {actionPlan.action_type?.action_type_name || t('unknownActionType')}
-                  </h3>
-                </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  {actionPlan.action_plan_description}
-                </p>
+            {/* Left Section: Badge + Title + Description */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant={config.badgeVariant} className="text-xs">
+                  {config.badgeText}
+                </Badge>
+                <h3 className="font-semibold text-base truncate">
+                  {actionPlan.action_type?.action_type_name || t('unknownActionType')}
+                </h3>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {format(dueDate, 'dd MMM yyyy', { locale: dateLocale })} • {getDaysMessage()}
+              </p>
             </div>
             
-            <div className="flex items-center gap-4 text-xs">
-              <div className="text-center">
-                <p className="font-semibold">
-                  {format(dueDate, 'dd MMM', { locale: dateLocale })}
-                </p>
-                <p className="text-xs text-muted-foreground">{getDaysMessage()}</p>
+            {/* Right Section: Metadata + Priority + Action Button */}
+            <div className="flex items-center gap-4 text-sm">
+              <div className="text-center hidden sm:block">
+                <p className="font-semibold text-xs">{actionPlan.component?.project?.project_name || 'No Project'}</p>
+                <p className="text-xs text-muted-foreground">{t('project')}</p>
               </div>
+              
               <Badge variant={getPriorityVariant(actionPlan.priority_level)} className="text-xs">
                 {getPriorityText(actionPlan.priority_level)}
               </Badge>
-              {/* Action button aligned with RecentProjects list view */}
+              
               {onViewDetails && (
                 <Button 
                   size="sm" 
@@ -204,9 +202,9 @@ export function ActionPlanAlertCard({
     )} onClick={() => onViewDetails && onViewDetails(actionPlan.id)}>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2">
-          {/* First row: Alert badge and action button (aligned with RecentProjects) */}
+          {/* ROW 1: Alert Type Badge + Action Button (Standard Pattern) */}
           <div className="flex items-center justify-between gap-2">
-            <Badge variant={config.badgeVariant} className="shrink-0 text-xs">
+            <Badge variant={config.badgeVariant} className="shrink-0">
               {config.badgeText}
             </Badge>
             {onViewDetails && (
@@ -219,74 +217,59 @@ export function ActionPlanAlertCard({
                 }} 
                 className="shrink-0 min-w-0"
               >
-                <span className="hidden md:inline text-xs">{t('viewDetails')}</span>
+                <span className="hidden md:inline">{t('viewDetails')}</span>
                 <ArrowRight className="h-3 w-3 md:ml-1" />
               </Button>
             )}
           </div>
           
-          {/* Second row: Title and priority */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <IconComponent className={cn('h-4 w-4', config.iconColor)} />
-              <CardTitle className="text-sm font-medium line-clamp-1">
+          {/* ROW 2: Action Plan Title + Priority Badge (Standard Pattern) */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <CardTitle className="text-lg truncate leading-tight flex-1" title={actionPlan.action_type?.action_type_name || t('unknownActionType')}>
                 {actionPlan.action_type?.action_type_name || t('unknownActionType')}
               </CardTitle>
+              <Badge variant={getPriorityVariant(actionPlan.priority_level)} className="text-xs shrink-0">
+                {getPriorityText(actionPlan.priority_level)}
+              </Badge>
             </div>
-            <Badge variant={getPriorityVariant(actionPlan.priority_level)} className="text-xs shrink-0">
-              {getPriorityText(actionPlan.priority_level)}
-            </Badge>
           </div>
         </div>
+        {/* ROW 3: Due Date Metadata (Standard Pattern) */}
+        <p className="text-sm text-muted-foreground mt-2">
+          <Calendar className="h-3 w-3 inline mr-1" />
+          {format(dueDate, 'dd MMM yyyy', { locale: dateLocale })} • {getDaysMessage()}
+        </p>
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {/* Descrizione Action Plan */}
+        {/* Main Content: Description (Standard Pattern) */}
         <p className="text-sm text-muted-foreground line-clamp-2">
           {actionPlan.action_plan_description}
         </p>
 
-        <Separator />
-
-        {/* Informazioni Progetto e Componente */}
-        <div className="space-y-2">
-          <div className="flex items-center text-xs text-muted-foreground">
-            <span className="font-medium">{t('project')}:</span>
-            <span className="ml-1 truncate">
+        {/* Metadata Footer (Standard Pattern) */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+          <div className="flex items-center gap-2">
+            <span className="truncate">
               {actionPlan.component?.project?.project_name || t('unknownProject')}
             </span>
+            {actionPlan.component?.project?.project_name && actionPlan.component?.component_name && (
+              <>
+                <span>•</span>
+                <span className="truncate">
+                  {actionPlan.component.component_name}
+                </span>
+              </>
+            )}
           </div>
-          <div className="flex items-center text-xs text-muted-foreground">
-            <span className="font-medium">{t('component')}:</span>
-            <span className="ml-1 truncate">
-              {actionPlan.component?.component_name || t('unknownComponent')}
-            </span>
-          </div>
-          {/* Debug info temporarily removed */}
-        </div>
-
-        <Separator />
-
-        {/* Data di scadenza e responsabile */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Calendar className="h-3 w-3" />
-              <span>{format(dueDate, 'dd MMM yyyy', { locale: dateLocale })}</span>
-            </div>
-            <span className="font-medium text-xs text-muted-foreground">
-              {getDaysMessage()}
-            </span>
-          </div>
-
           {actionPlan.responsible_user && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 shrink-0">
               <User className="h-3 w-3" />
               <span className="truncate">{responsibleUserName}</span>
             </div>
           )}
         </div>
-
       </CardContent>
     </Card>
   );
