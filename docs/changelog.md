@@ -12,7 +12,52 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
 
 ---
 
-## [0.4.1] - 2025-08-25 (Current Session)
+## [0.5.0] - 2025-08-27 (Current Session)
+
+### 🚀 Features
+- **Multi-Tab Coordination System**
+  - Implementato sistema di coordinamento tra schede browser multiple
+  - Prevenzione chiamate API concorrenti con localStorage-based locking
+  - Rate limiting 500ms per useActionPlanAlerts hook
+  - Supporto SSR-safe con `typeof window !== 'undefined'` checks
+  - Gestione indipendente per caricamenti iniziali vs auto-refresh
+
+### 🎨 UI/UX Improvements  
+- **ActionPlanAlerts Button Alignment**
+  - Allineati pulsanti con pattern di RecentProjects cards
+  - Pulsanti action spostati in header area (grid view) con variant outline
+  - Pulsanti icon-only in list view con variant ghost
+  - Testo responsivo con `hidden md:inline` per mobile optimization
+- **KPI Cards Styling Consistency**
+  - Rimossi effetti animazione (scale, fade-in) 
+  - Allineati con shadow-only hover effects (`hover:shadow-md transition-shadow`)
+  - Consistenza visiva uniforme tra tutti i componenti dashboard
+
+### 🐛 Critical Fixes
+- **Infinite Loop Resolution**
+  - Risolti infinite loop durante login multi-tab
+  - Fix conflitti AuthContext processing tra schede multiple
+  - Stabilizzati localStorage access patterns in useCallback hooks
+- **Test Page Loading Issues**
+  - Risolto problema caricamento test page quando dashboard è aperto
+  - Coordinamento più leggero che permette caricamenti iniziali indipendenti
+- **Cross-Tab Authentication**
+  - Mantenuta funzionalità logout attraverso multiple browser tabs
+  - Prevenuti race conditions in auth state management
+
+### 🔧 Technical Improvements
+- **Hook Stability**
+  - localStorage access spostato in variabili locali per prevenire instabilità
+  - Aggiunta gestione cleanup appropriata per coordination locks
+  - Pattern SSR-safe implementato consistentemente
+- **Error Handling**  
+  - Migliorate strategie di retry per initial loads
+  - Logging dettagliato per debug multi-tab scenarios
+  - Gestione graceful per timeout e conflitti
+
+---
+
+## [0.4.1] - 2025-08-25
 
 ### 🐛 Fixed
 - **session-start.sh Script Issues**
@@ -41,6 +86,13 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
   - Implementazione grid/list view modes per consistenza
   - Standardizzazione header layout con view toggles e actions  
   - Utilizzo Badge components per status/priority invece di color coding
+
+### 🔧 Git Repository Management
+- **Branch Management Completed**
+  - Merged feat/action-plan-alerts → main (fast-forward, no conflicts)
+  - Deleted local feature branch after successful merge
+  - Local main 3 commits ahead of origin/main (ready for push)
+  - Clean repository state achieved for next development cycle
 
 ### ✨ Added
 - Dashboard con KPI cards dinamiche
