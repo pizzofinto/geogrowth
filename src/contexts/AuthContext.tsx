@@ -69,13 +69,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('🔍 Ruoli utente:', userRoles);
         console.log('🔍 Lingua preferita:', profile?.preferred_language); // ← AGGIUNTO LOG!
         
+        // ✅ FIXED: Get localStorage value outside of useCallback to prevent instability
+        const localStorageLanguage = typeof window !== 'undefined' 
+          ? (localStorage.getItem('preferred-language') as 'en' | 'it') 
+          : null;
+        
         // 4. Creiamo l'oggetto utente arricchito (CON LA LINGUA!)
         const userWithProfile: UserProfile = {
           ...authUser,
           full_name: profile?.full_name,
           // Fallback chain: DB preference → localStorage → 'en'
           preferred_language: profile?.preferred_language || 
-                             (localStorage.getItem('preferred-language') as 'en' | 'it') || 
+                             localStorageLanguage || 
                              'en',
         };
 
@@ -84,10 +89,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       } catch (error) {
         console.error('Errore durante il setup auth:', error);
+        // ✅ FIXED: Get localStorage value outside of useCallback to prevent instability
+        const localStorageLanguage = typeof window !== 'undefined' 
+          ? (localStorage.getItem('preferred-language') as 'en' | 'it') 
+          : null;
+        
         // Anche nel fallback, includiamo la lingua di default con chain completa
         setUser({
           ...authUser,
-          preferred_language: (localStorage.getItem('preferred-language') as 'en' | 'it') || 'en' // ← AGGIUNTO fallback chain!
+          preferred_language: localStorageLanguage || 'en' // ← AGGIUNTO fallback chain!
         } as UserProfile);
         setRoles([]);
       }
@@ -99,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     setIsLoading(false);
     isProcessingRef.current = false;
-  }, []); // Remove isProcessing from dependencies
+  }, []); // ✅ FIXED: Still empty deps but localStorage access is now stable
 
   useEffect(() => {
     let isMounted = true;
