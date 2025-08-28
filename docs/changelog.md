@@ -12,7 +12,43 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
 
 ---
 
-## [0.5.0] - 2025-08-27 (Current Session)
+## [0.5.1] - 2025-08-28 (Current Session)
+
+### 🎨 UI/UX Improvements
+- **ActionPlan Alert Badge Enhancements**
+  - Fixed missing status badges for overdue and high priority alerts
+  - Added explicit background colors for all alert types (red, orange, blue)
+  - Aligned overdue badge styling with tab count badge (light red background)
+  - Moved priority badge to same row as alert type badge with black background
+  - Enhanced badge visibility across light/dark themes
+- **Tab Count Badge Consistency**
+  - Fixed high priority tab to always show count badge (even when 0)
+  - Applied consistent styling to overdue tab count badge with improved contrast
+  - Updated all tab badges with harmonized color schemes
+- **Navigation and Icon Standardization**
+  - Replaced ArrowRight with ExternalLink icon for "View Details" buttons
+  - Maintained consistent iconography with RecentProjects pattern
+  - Ensured proper navigation integration with project dashboard pages
+
+### 🐛 Fixed
+- **Badge Visibility Issues**
+  - Resolved destructive variant badges not showing in current theme
+  - Fixed badge color contrast problems across different alert types
+  - Corrected conditional display logic for tab count badges
+- **Design Consistency**
+  - Eliminated visual inconsistencies between alert cards and tab indicators
+  - Standardized badge hierarchy and positioning across all components
+  - Aligned color schemes between card badges and corresponding tab badges
+
+### 🔧 Technical Improvements
+- **Component Styling**
+  - Enhanced badge component with forced color overrides for visibility
+  - Improved responsive design for badge layouts in both grid and list views
+  - Optimized CSS classes for better theme compatibility
+
+---
+
+## [0.5.0] - 2025-08-27
 
 ### 🚀 Features
 - **Multi-Tab Coordination System**
@@ -278,4 +314,4 @@ Format: `[version]-hotfix-[number]: [description] ([date])`
 
 **Maintained by**: GeoGrowth Team  
 **License**: [License Type]  
-**Last Updated**: 2025-08-25
+**Last Updated**: 2025-08-28
