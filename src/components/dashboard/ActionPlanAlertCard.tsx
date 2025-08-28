@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { it, enUS } from 'date-fns/locale';
 import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
-import { Calendar, Clock, AlertTriangle, User, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, AlertTriangle, User, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -151,7 +151,15 @@ export function ActionPlanAlertCard({
             {/* Left Section: Badge + Title + Description */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <Badge variant={config.badgeVariant} className="text-xs">
+                <Badge 
+                  variant={config.badgeVariant} 
+                  className={cn(
+                    "text-xs",
+                    alertType === 'overdue' && "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-100 dark:border-red-900",
+                    alertType === 'dueSoon' && "bg-orange-500 text-white border-orange-500",
+                    alertType === 'highPriority' && "bg-blue-600 text-white border-blue-600"
+                  )}
+                >
                   {config.badgeText}
                 </Badge>
                 <h3 className="font-semibold text-base truncate">
@@ -170,7 +178,7 @@ export function ActionPlanAlertCard({
                 <p className="text-xs text-muted-foreground">{t('project')}</p>
               </div>
               
-              <Badge variant={getPriorityVariant(actionPlan.priority_level)} className="text-xs">
+              <Badge variant="default" className="text-xs bg-black text-white hover:bg-black/80">
                 {getPriorityText(actionPlan.priority_level)}
               </Badge>
               
@@ -184,7 +192,7 @@ export function ActionPlanAlertCard({
                     onViewDetails(actionPlan.id);
                   }}
                 >
-                  <ArrowRight className="h-4 w-4" />
+                  <ExternalLink className="h-4 w-4" />
                 </Button>
               )}
             </div>
@@ -202,11 +210,24 @@ export function ActionPlanAlertCard({
     )} onClick={() => onViewDetails && onViewDetails(actionPlan.id)}>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2">
-          {/* ROW 1: Alert Type Badge + Action Button (Standard Pattern) */}
+          {/* ROW 1: Alert Type Badge + Priority Badge + Action Button */}
           <div className="flex items-center justify-between gap-2">
-            <Badge variant={config.badgeVariant} className="shrink-0">
-              {config.badgeText}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge 
+                variant={config.badgeVariant} 
+                className={cn(
+                  "shrink-0",
+                  alertType === 'overdue' && "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-100 dark:border-red-900",
+                  alertType === 'dueSoon' && "bg-orange-500 text-white border-orange-500",
+                  alertType === 'highPriority' && "bg-blue-600 text-white border-blue-600"
+                )}
+              >
+                {config.badgeText}
+              </Badge>
+              <Badge variant="default" className="text-xs shrink-0 bg-black text-white hover:bg-black/80">
+                {getPriorityText(actionPlan.priority_level)}
+              </Badge>
+            </div>
             {onViewDetails && (
               <Button 
                 size="sm" 
@@ -218,21 +239,16 @@ export function ActionPlanAlertCard({
                 className="shrink-0 min-w-0"
               >
                 <span className="hidden md:inline">{t('viewDetails')}</span>
-                <ArrowRight className="h-3 w-3 md:ml-1" />
+                <ExternalLink className="h-3 w-3 md:ml-1" />
               </Button>
             )}
           </div>
           
-          {/* ROW 2: Action Plan Title + Priority Badge (Standard Pattern) */}
+          {/* ROW 2: Action Plan Title */}
           <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <CardTitle className="text-lg truncate leading-tight flex-1" title={actionPlan.action_type?.action_type_name || t('unknownActionType')}>
-                {actionPlan.action_type?.action_type_name || t('unknownActionType')}
-              </CardTitle>
-              <Badge variant={getPriorityVariant(actionPlan.priority_level)} className="text-xs shrink-0">
-                {getPriorityText(actionPlan.priority_level)}
-              </Badge>
-            </div>
+            <CardTitle className="text-lg truncate leading-tight" title={actionPlan.action_type?.action_type_name || t('unknownActionType')}>
+              {actionPlan.action_type?.action_type_name || t('unknownActionType')}
+            </CardTitle>
           </div>
         </div>
         {/* ROW 3: Due Date Metadata (Standard Pattern) */}

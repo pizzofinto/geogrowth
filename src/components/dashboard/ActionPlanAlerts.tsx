@@ -284,7 +284,7 @@ export function ActionPlanAlerts({
             <TabsTrigger value="overdue" className="text-xs">
               {t('overdue')}
               {data.overdueCount > 0 && (
-                <Badge variant="destructive" className="ml-2 h-5 px-2 text-xs">
+                <Badge variant="destructive" className="ml-2 h-5 px-2 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
                   {data.overdueCount}
                 </Badge>
               )}
@@ -300,7 +300,7 @@ export function ActionPlanAlerts({
             <TabsTrigger value="highPriority" className="text-xs">
               {t('highPriority')}
               {data.highPriorityCount > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 px-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                <Badge variant="secondary" className="ml-2 h-5 px-2 text-xs bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100">
                   {data.highPriorityCount}
                 </Badge>
               )}
