@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { AlertTriangle, Clock, TrendingUp, RefreshCw, ChevronRight, Settings, Grid3X3, List } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ export function ActionPlanAlerts({
   onConfigClick 
 }: ActionPlanAlertsProps) {
   const t = useTranslations('dashboard.actionPlans');
+  const router = useRouter();
   const { data, isLoading, error, refetch } = useActionPlanAlerts(config);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -52,11 +54,27 @@ export function ActionPlanAlerts({
     setIsRefreshing(false);
   }, [refetch]);
 
-  // ✅ FIXED: useCallback per prevenire ricreazioni
+  // ✅ Navigate to project dashboard for action plan details
   const handleViewDetails = useCallback((actionPlanId: number) => {
-    // TODO: Implementare navigazione al dettaglio action plan
-    console.log('View action plan details:', actionPlanId);
-  }, []);
+    // Find the action plan to get project information
+    const allActionPlans = [
+      ...data.overdue,
+      ...data.dueSoon, 
+      ...data.highPriority
+    ];
+    
+    const actionPlan = allActionPlans.find(ap => ap.id === actionPlanId);
+    
+    if (actionPlan?.component?.project_id) {
+      const projectId = actionPlan.component.project_id;
+      console.log(`🚀 Navigating to project ${projectId} dashboard for action plan ${actionPlanId}`);
+      router.push(`/projects/${projectId}/dashboard?actionPlan=${actionPlanId}`);
+    } else {
+      console.error('❌ Could not find project for action plan:', actionPlanId);
+      // Fallback: navigate to project selection if no project found
+      router.push('/project-selection');
+    }
+  }, [data, router]);
 
   // Loading state
   if (isLoading) {
