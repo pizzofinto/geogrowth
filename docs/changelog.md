@@ -10,9 +10,17 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
 ### 🎯 Target Release: v1.0.0-beta.1
 ### 📅 Sprint End: [Data Fine Sprint]
 
+### 🚧 In Development
+- **ProjectTimeline Component Refactoring**
+  - Analysis completed: identified 7 major improvement areas
+  - Component architecture designed: ProjectTimeline, ProjectTimelineCard, ProjectTimelineItem
+  - Design system requirements defined following established patterns
+  - Accessibility and i18n integration planned
+  - Target: Complete reusable timeline system replacing current implementation
+
 ---
 
-## [0.5.1] - 2025-08-28 (Current Session)
+## [0.5.1] - 2025-08-28
 
 ### 🎨 UI/UX Improvements
 - **ActionPlan Alert Badge Enhancements**
