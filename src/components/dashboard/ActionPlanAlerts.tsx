@@ -299,11 +299,9 @@ export function ActionPlanAlerts({
             </TabsTrigger>
             <TabsTrigger value="highPriority" className="text-xs">
               {t('highPriority')}
-              {data.highPriorityCount > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 px-2 text-xs bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100">
-                  {data.highPriorityCount}
-                </Badge>
-              )}
+              <Badge variant="secondary" className="ml-2 h-5 px-2 text-xs bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100">
+                {data.highPriorityCount}
+              </Badge>
             </TabsTrigger>
           </TabsList>
 
