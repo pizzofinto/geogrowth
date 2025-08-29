@@ -158,7 +158,7 @@ export function ProjectTimelineItem({
 
   // Render progress bar timeline (hybrid version)
   if (compact) {
-    // Dynamic height: h-8 for no labels, h-20 for labels above+below
+    // Dynamic height: h-8 for no labels, h-24 for labels above+below
     const containerHeight = showLabels ? "h-24" : "h-8";
     
     return (
@@ -168,7 +168,7 @@ export function ProjectTimelineItem({
           <div className="flex items-center gap-2 w-full h-full">
             {/* Progress bar */}
             <div className="flex-1 relative h-full flex items-center">
-              {/* Simple timeline progress bar */}
+              {/* Timeline progress bar */}
               <div className="w-full h-2 bg-secondary rounded-full relative">
                 {/* Progress indicator up to today */}
                 {showToday && todayPosition > 0 && (
@@ -231,7 +231,6 @@ export function ProjectTimelineItem({
                           >
                             <div className={cn(
                               "w-3 h-3 rounded-full border-2 border-background cursor-pointer transition-all duration-200 hover:scale-110",
-                              // ✅ Improved color scheme for better UX
                               milestone.status === 'completed' && "bg-green-500 border-green-500",
                               milestone.status === 'in-progress' && "bg-blue-500 border-blue-500", 
                               milestone.status === 'planned' && "bg-transparent border-gray-400 border-2",

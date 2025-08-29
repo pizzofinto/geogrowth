@@ -43,6 +43,7 @@ interface ProjectTimelineProps {
   onConfigClick?: () => void;
   limit?: number;
   onLimitChange?: (limit: number) => void;
+  onProjectClick?: (projectId: string | number) => void; // NEW: Project navigation
 }
 ```
 
@@ -59,25 +60,32 @@ Individual project card component with hybrid layout support for both grid and l
 
 #### Features
 - **Hybrid Layout System**: Different layouts for grid vs list view
-- **Status Badges**: Visual project status indicators
+- **Status Badges**: Visual project status indicators with milestone counts
 - **Progress Calculations**: Dynamic progress bars with percentage display
 - **Milestone Statistics**: Summary of milestone completion rates
 - **Responsive Metrics**: Adaptive information display based on screen size
-- **Click Navigation**: Project navigation with access tracking
+- **Click Navigation**: Project navigation with "Open" button
+- **Internationalization**: Fully translated UI elements (EN/IT supported)
+- **Accessibility**: Keyboard navigation and ARIA labels
 
 #### View Modes
 
 ##### Grid View
 - Full card layout with detailed information
-- Milestone labels and dates visible
-- Complete project statistics
-- Large progress indicators
+- Milestone count badge in top-left corner (e.g., "2/4")
+- Status badge and progress bar in header
+- "Open" button with text + icon
+- Timeline with milestone labels visible
+- Complete project statistics in footer
 
 ##### List View  
-- Compact horizontal layout
-- Status badge + project name + timeline
+- Compact horizontal layout following ActionPlan/RecentProjects pattern
+- Milestone count badge + status badge in left corner
+- Project name and dates with proper icons
+- Compact timeline without labels
 - Small progress indicator
-- Consistent with other dashboard components
+- Icon-only "Open" button (consistent with other list views)
+- Enhanced date formatting with Calendar and Clock icons
 
 #### Props
 ```typescript
@@ -95,12 +103,13 @@ interface ProjectTimelineCardProps {
 Core timeline visualization component that renders the actual timeline with milestones.
 
 #### Features
-- **Milestone Markers**: Color-coded circular markers for each milestone
-- **Today Marker**: Distinctive black diamond shape
-- **Progress Bar**: Visual progress indication up to current date
-- **Milestone Labels**: Names, dates, and countdown information
+- **Milestone Markers**: Color-coded circular markers (3px diameter)
+- **Today Marker**: Distinctive black diamond shape (2.5px)
+- **Progress Bar**: Clean 2px progress indication up to current date
+- **Milestone Labels**: Names, dates, and countdown information (grid view only)
 - **Tooltips**: Detailed information on hover
 - **Responsive Design**: Adaptive sizing and layout
+- **Clean Styling**: Simplified design without heavy gradients or shadows
 
 #### Visual System
 
@@ -117,14 +126,16 @@ Core timeline visualization component that renders the actual timeline with mile
 - **Color**: Black (white in dark mode)
 - **Size**: 2.5 x 2.5 (10px x 10px)
 - **Purpose**: Clearly distinguish from circular milestones
+- **Style**: Clean without glow effects or animations
 
 #### Layout Modes
 
 ##### Compact Mode (`compact={true}`)
 - Height: 32px (no labels) or 96px (with labels)
-- Horizontal progress bar layout
+- Clean 2px horizontal progress bar
 - Used in both grid and list views
-- Milestone summary icons when labels hidden
+- Simple milestone summary with emoji indicators when labels hidden
+- Simplified styling without heavy visual effects
 
 ##### Full Mode (`compact={false}`)
 - Height: 80px
@@ -226,6 +237,33 @@ function MilestoneTimeline({ project }) {
   );
 }
 ```
+
+## Recent Improvements (v0.5.2)
+
+### Visual Design Refinements
+- **Simplified Styling**: Removed heavy gradients and thick borders for cleaner appearance
+- **Reduced Timeline Thickness**: Progress bar reduced from 3px to 2px
+- **Milestone Dot Sizing**: Standardized to 3px diameter for better proportion
+- **Clean Color Scheme**: Simplified color system without excessive shadows
+
+### Layout Enhancements
+- **Milestone Count Badge**: Added prominent milestone tracker (e.g., "2/4") in left corner of cards
+- **Progress Bar Placement**: Moved progress bar to card header right-side alignment
+- **Icon Consistency**: Added Clock icon next to project end dates
+- **ActionPlan Pattern Matching**: List view now follows same button pattern as other components
+
+### Navigation & UX
+- **Open Button Integration**: Added "Open" button for project navigation
+- **Icon-Only List View**: List view buttons show icon-only for space efficiency
+- **Text + Icon Grid View**: Grid view buttons show "Open" text + icon for clarity
+- **Translation Support**: All button text properly internationalized (EN: "Open", IT: "Apri")
+- **Consistent Interaction**: Standardized button styling across all dashboard components
+
+### Technical Improvements
+- **Router Integration**: Safe navigation handling with Next.js router
+- **Multi-Tab Safety**: Navigation actions don't interfere with existing multi-tab features
+- **Infinite Loop Prevention**: All new hooks use stable dependencies
+- **Type Safety**: Enhanced TypeScript interfaces for better development experience
 
 ## Performance Considerations
 

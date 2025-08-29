@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,7 @@ type ErrorState = {
 };
 
 export default function GlobalDashboardPage() {
+  const router = useRouter();
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const tMessages = useTranslations('messages');
@@ -56,6 +58,11 @@ export default function GlobalDashboardPage() {
   const [loading, setLoading] = useState<LoadingState>({ stats: true, timelines: true });
   const [error, setError] = useState<ErrorState>({ stats: null, timelines: null });
   const [timelineLimit, setTimelineLimit] = useState(5); // Default to 5 projects
+
+  // Project navigation handler
+  const handleProjectClick = useCallback((projectId: string | number) => {
+    router.push(`/projects/${projectId}`);
+  }, [router]);
 
   // Funzione per fetch delle statistiche
   const fetchStats = useCallback(async () => {
@@ -222,6 +229,7 @@ export default function GlobalDashboardPage() {
         showControls={true}
         limit={timelineLimit}
         onLimitChange={setTimelineLimit}
+        onProjectClick={handleProjectClick}
       />
 
       {/* Action Plan Alerts Section - FIXED ✅ */}

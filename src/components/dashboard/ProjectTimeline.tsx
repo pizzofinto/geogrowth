@@ -41,6 +41,8 @@ interface ProjectTimelineProps {
   /** Project limit configuration */
   limit?: number;
   onLimitChange?: (limit: number) => void;
+  /** Project click handler for Open button */
+  onProjectClick?: (projectId: string | number) => void;
 }
 
 /**
@@ -60,7 +62,8 @@ export function ProjectTimeline({
   showControls = true,
   onConfigClick,
   limit = 5,
-  onLimitChange
+  onLimitChange,
+  onProjectClick
 }: ProjectTimelineProps) {
   const t = useTranslations('dashboard.timelines');
   const tCommon = useTranslations('common');
@@ -156,7 +159,7 @@ export function ProjectTimeline({
   );
   
   return (
-    <Card className={cn("hover:shadow-md transition-shadow", className)}>
+    <Card className={cn("transition-shadow hover:shadow-lg bg-background", className)}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -301,6 +304,7 @@ export function ProjectTimeline({
                 key={`timeline-${project.project_id}-${index}`}
                 project={project}
                 viewMode={currentViewMode}
+                onProjectClick={onProjectClick}
               />
             ))}
           </div>

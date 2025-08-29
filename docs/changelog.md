@@ -30,6 +30,24 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
   - **Responsive Design**: Optimized layouts for mobile and desktop
   - **Accessibility**: Full tooltip support and keyboard navigation
 
+### 🎨 Enhanced
+- **ProjectTimeline Visual Refinements** (✅ COMPLETED)
+  - **Simplified Design**: Removed heavy gradients, thick borders, and excessive shadows for cleaner appearance
+  - **Timeline Thickness**: Reduced progress bar from 3px to 2px for more proportional design
+  - **Milestone Dots**: Standardized to 3px diameter with clean color scheme
+  - **Today Marker**: Simplified diamond design without glow effects
+  - **Layout Improvements**:
+    - Added milestone count badge ("2/4") in left corner of project cards
+    - Moved progress bar to card header right-side alignment
+    - Added Clock icon next to project end dates for better visual hierarchy
+    - List view buttons now icon-only (consistent with ActionPlan/RecentProjects pattern)
+    - Grid view buttons show "Open" text + icon for clarity
+  - **Navigation Integration**:
+    - Added "Open" button for project navigation with proper routing
+    - Full internationalization support (EN: "Open", IT: "Apri")
+    - Consistent interaction patterns across all dashboard components
+  - **Technical Safety**: All improvements maintain infinite loop prevention and multi-tab safety
+
 ---
 
 ## [0.5.1] - 2025-08-28
