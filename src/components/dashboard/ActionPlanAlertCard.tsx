@@ -9,7 +9,6 @@ import { Calendar, Clock, AlertTriangle, User, ExternalLink } from 'lucide-react
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 // Definizione dei tipi per Action Plan (allineati con l'hook)
@@ -104,7 +103,6 @@ export function ActionPlanAlertCard({
   };
 
   const config = getAlertConfig();
-  const IconComponent = config.icon;
 
   // Formatta il nome dell'utente responsabile
   const responsibleUserName = actionPlan.responsible_user
@@ -119,12 +117,6 @@ export function ActionPlanAlertCard({
     return t('priority.low');
   };
 
-  const getPriorityVariant = (level: number): 'default' | 'secondary' | 'destructive' | 'outline' => {
-    if (level <= 2) return 'destructive';
-    if (level <= 4) return 'default';
-    if (level <= 6) return 'secondary';
-    return 'outline';
-  };
 
   // Formatta il messaggio dei giorni
   const getDaysMessage = (): string => {

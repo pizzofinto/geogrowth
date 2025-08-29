@@ -112,6 +112,38 @@
       "noDueSoonActions": "No action plans due soon.",
       "noHighPriorityActions": "No high priority action plans."
     },
+    "timelines": {
+      "title": "Project Timelines",
+      "viewMode": {
+        "grid": "Grid view",
+        "list": "List view"
+      },
+      "configure": "Configure timeline settings",
+      "empty": {
+        "title": "No Project Timelines",
+        "description": "Project timelines will appear here when projects have milestones defined."
+      },
+      "status": {
+        "invalid": "Invalid",
+        "invalidDesc": "Project has invalid dates",
+        "overdue": "Overdue",
+        "overdueDesc": "Project deadline passed {days} days ago",
+        "atRisk": "At Risk",
+        "atRiskDesc": "{count} milestone(s) are overdue",
+        "inProgress": "In Progress",
+        "inProgressDesc": "Project is actively being worked on",
+        "completed": "Completed",
+        "completedDesc": "All milestones completed successfully",
+        "onTrack": "On Track",
+        "onTrackDesc": "Project is progressing as planned"
+      },
+      "milestones": "milestones",
+      "completed": "completed",
+      "inProgress": "in progress",
+      "overdue": "overdue",
+      "complete": "complete",
+      "viewProject": "View project details"
+    },
     "welcome": "Welcome back",
     "recentProjects": "Recent Projects",
     "lastAccessed": "Last accessed",

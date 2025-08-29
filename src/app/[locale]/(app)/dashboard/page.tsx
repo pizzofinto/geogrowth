@@ -6,9 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Activity, AlertTriangle, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, RefreshCw } from 'lucide-react';
-import { ModernHorizontalTimeline } from './modern-horizontal-timeline';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+import { ProjectTimeline } from '@/components/dashboard/ProjectTimeline';
 import React from 'react';
 import RecentProjectsSection from '@/components/dashboard/RecentProjectsSection';
 import { ActionPlanAlerts } from '@/components/dashboard/ActionPlanAlerts';
@@ -57,7 +55,7 @@ export default function GlobalDashboardPage() {
   const [timelines, setTimelines] = useState<ProjectWithTimeline[]>([]);
   const [loading, setLoading] = useState<LoadingState>({ stats: true, timelines: true });
   const [error, setError] = useState<ErrorState>({ stats: null, timelines: null });
-  const [timelineLimit, setTimelineLimit] = useState(3);
+  const [timelineLimit, setTimelineLimit] = useState(5); // Default to 5 projects
 
   // Funzione per fetch delle statistiche
   const fetchStats = useCallback(async () => {
@@ -214,74 +212,20 @@ export default function GlobalDashboardPage() {
         )}
       </div>
 
+      {/* Project Timeline Section - NEW POSITION ✅ */}
+      <ProjectTimeline
+        projects={timelines || []}
+        loading={loading.timelines}
+        error={error.timelines}
+        onRefresh={fetchTimelines}
+        isRefreshing={loading.timelines}
+        showControls={true}
+        limit={timelineLimit}
+        onLimitChange={setTimelineLimit}
+      />
+
       {/* Action Plan Alerts Section - FIXED ✅ */}
       <ActionPlanAlerts />
-
-      {/* Sezione Timeline */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>{t('projectProgress')}</CardTitle>
-          <Select 
-            value={String(timelineLimit)} 
-            onValueChange={(value) => setTimelineLimit(Number(value))}
-            disabled={loading.timelines}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="3">Show 3 Projects</SelectItem>
-              <SelectItem value="5">Show 5 Projects</SelectItem>
-              <SelectItem value="10">Show 10 Projects</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardHeader>
-        <CardContent>
-          {loading.timelines ? (
-            <div className="space-y-6">
-              {Array.from({ length: timelineLimit }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <Skeleton className="w-1/4 h-6" />
-                  <Skeleton className="w-3/4 h-12" />
-                </div>
-              ))}
-            </div>
-          ) : error.timelines ? (
-            <div className="flex items-center justify-center py-8">
-              <p className="text-sm text-destructive">{tErrors('generic')}: {error.timelines}</p>
-            </div>
-          ) : timelines && timelines.length > 0 ? (
-            <div className="space-y-6">
-              {timelines.map((project, index) => (
-                <React.Fragment key={project.project_id}>
-                  <div className="flex items-center gap-4">
-                    <div className="w-1/4 min-w-0">
-                      <p className="font-semibold truncate" title={project.project_name}>
-                        {project.project_name}
-                      </p>
-                    </div>
-                    <div className="w-3/4">
-                      <ModernHorizontalTimeline 
-                        milestones={project.milestones || []}
-                        startDate={project.project_start_date}
-                        endDate={project.project_end_date}
-                        showToday={true}
-                      />
-                    </div>
-                  </div>
-                  {index < timelines.length - 1 && <Separator />}
-                </React.Fragment>
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center py-8">
-              <p className="text-sm text-muted-foreground">
-                {tMessages('noResults')}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Recent Projects Section - RESTORED */}
       <RecentProjectsSection limit={4} />

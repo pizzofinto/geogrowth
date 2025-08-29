@@ -112,6 +112,38 @@
       "noDueSoonActions": "Nessun action plan in scadenza.",
       "noHighPriorityActions": "Nessun action plan ad alta priorità."
     },
+    "timelines": {
+      "title": "Timeline dei Progetti",
+      "viewMode": {
+        "grid": "Vista griglia",
+        "list": "Vista lista"
+      },
+      "configure": "Configura impostazioni timeline",
+      "empty": {
+        "title": "Nessuna Timeline di Progetto",
+        "description": "Le timeline dei progetti appariranno qui quando i progetti avranno milestone definite."
+      },
+      "status": {
+        "invalid": "Non valido",
+        "invalidDesc": "Il progetto ha date non valide",
+        "overdue": "In ritardo",
+        "overdueDesc": "Scadenza del progetto superata di {days} giorni",
+        "atRisk": "A rischio",
+        "atRiskDesc": "{count} milestone in ritardo",
+        "inProgress": "In corso",
+        "inProgressDesc": "Il progetto è attualmente in lavorazione",
+        "completed": "Completato",
+        "completedDesc": "Tutte le milestone completate con successo",
+        "onTrack": "In linea",
+        "onTrackDesc": "Il progetto procede come previsto"
+      },
+      "milestones": "milestone",
+      "completed": "completato",
+      "inProgress": "in corso",
+      "overdue": "in ritardo",
+      "complete": "completo",
+      "viewProject": "Visualizza dettagli progetto"
+    },
     "welcome": "Bentornato",
     "recentProjects": "Progetti Recenti",
     "lastAccessed": "Ultimo accesso",
