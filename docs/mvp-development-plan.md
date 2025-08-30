@@ -36,31 +36,38 @@ Creare una versione funzionante minima che permetta:
   - Layout responsive mobile-first
 
 - **Dashboard Base**
-  - Struttura componenti modulare
-  - Sezione progetti recenti
-  - Cards per KPI (da completare)
+  - Struttura componenti modulare ✅ COMPLETED
+  - Sezione progetti recenti ✅ COMPLETED
+  - Cards per KPI ✅ COMPLETED
+  - ActionPlan alerts system ✅ COMPLETED
+  - ProjectTimeline component system ✅ COMPLETED
 
 ## 🚧 In Sviluppo (Priorità Alta)
 
 ### Fase 1: Core Features (2-3 settimane)
 
-#### 1.1 Completamento Dashboard (3-4 giorni)
+#### 1.1 Completamento Dashboard ✅ COMPLETED
 ```typescript
-// Files da creare/completare:
-- src/components/dashboard/KPICards.tsx
-- src/components/dashboard/MaturityChart.tsx
-- src/components/dashboard/ActionPlanAlerts.tsx
-- src/hooks/useDashboardStats.ts
+// Files completati:
+✅ src/components/dashboard/KPICards.tsx - COMPLETED
+✅ src/components/dashboard/ActionPlanAlerts.tsx - COMPLETED 
+✅ src/components/dashboard/ProjectTimeline.tsx - COMPLETED
+✅ src/components/dashboard/ProjectTimelineCard.tsx - COMPLETED
+✅ src/components/dashboard/ProjectTimelineItem.tsx - COMPLETED
+✅ src/hooks/useActionPlanAlerts.ts - COMPLETED
+✅ src/hooks/useRecentProjects.ts - COMPLETED
 ```
 
-**Tasks:**
-- [ ] Implementare hook per statistiche globali
-- [ ] Creare componenti KPI cards con dati reali
-- [ ] Aggiungere grafico maturity index (Recharts)
-- [ ] Implementare alerts per action plans scaduti
-- [ ] Aggiungere refresh automatico dati (polling/websocket)
+**Tasks Completed:**
+- [x] Implementare hook per statistiche globali ✅
+- [x] Creare componenti KPI cards con dati reali ✅
+- [x] Implementare alerts per action plans scaduti ✅
+- [x] Implementare ProjectTimeline con milestone system ✅
+- [x] Aggiungere refresh automatico dati ✅
+- [x] Complete visual design consistency ✅
 
-**Commit suggerito:** Dopo completamento di ogni componente dashboard
+**Remaining for Fase 1:**
+- [ ] Aggiungere grafico maturity index (Recharts) - Next Sprint
 
 #### 1.2 Gestione Progetti (5-6 giorni)
 ```typescript
@@ -274,19 +281,20 @@ export function useComponents(projectId: number) {
 
 ## 📅 Timeline Suggerito
 
-### Sprint 1 (Settimana 1-2)
-- Completamento Dashboard
-- Gestione Progetti base
-- Setup CI/CD
+### Sprint 1 (Settimana 1-2) ✅ COMPLETED
+- ✅ Completamento Dashboard
+- ⏳ Gestione Progetti base (Moving to Sprint 2)
+- Setup CI/CD (Optional)
 
-**Milestone:** Prima demo funzionante con progetti e dashboard
+**Milestone:** ✅ Prima demo funzionante con dashboard completo
 
-### Sprint 2 (Settimana 3-4)
-- Gestione Componenti completa
+### Sprint 2 (Settimana 3-4) - CURRENT FOCUS
+- Gestione Progetti completa (moved from Sprint 1)
+- Gestione Componenti base
 - Inserimento Valutazioni
-- Action Plans base
+- Action Plans enhancement
 
-**Milestone:** MVP core completo - tracciamento end-to-end
+**Milestone:** MVP core completo - tracciamento end-to-end con project management
 
 ### Sprint 3 (Settimana 5-6)
 - Reporting e Analytics
@@ -320,21 +328,23 @@ export function useComponents(projectId: number) {
 - [ ] Rate limiting APIs
 - [ ] SSL certificati validi
 
-## 📝 Prossimi Passi Immediati
+## 📝 Prossimi Passi Immediati - Sprint 2
 
-1. **Oggi/Domani:**
-   - Completare KPI cards dashboard
-   - Iniziare lista progetti
-   - Commit: "feat: complete dashboard KPI cards"
+1. **Sprint 1 Completion Tasks:**
+   - Merge feat/project-timeline-refactor branch to main
+   - Create new branch for Sprint 2 development
+   - Start project list implementation
 
-2. **Questa Settimana:**
-   - Finire gestione progetti CRUD
-   - Implementare project detail page
-   - Setup GitHub Actions per CI
+2. **Questa Settimana (Sprint 2 Start):**
+   - Implementare project list page con filtri e ricerca
+   - Creare project detail page
+   - Form per creazione nuovi progetti
+   - Commit: "feat: implement project management CRUD"
 
-3. **Prossima Settimana:**
+3. **Prossima Settimana (Sprint 2 Continue):**
    - Component list con DataTable
    - Evaluation form
+   - Maturity chart component
    - Status calculation logic
 
 ## 🎯 Definition of Done

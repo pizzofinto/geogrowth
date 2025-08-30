@@ -138,17 +138,17 @@ export default function GlobalDashboardPage() {
   }, [fetchTimelines]);
 
   return (
-    <div className="flex flex-col gap-6 mt-4">
+    <div className="flex flex-col gap-4 sm:gap-6 mt-2 sm:mt-4 px-2 sm:px-0">
       {/* Header semplificato senza refresh button */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('title')}</h1>
       </div>
 
       {/* KPI Cards Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{t('statistics')}</h2>
-          <p className="text-sm text-muted-foreground">{t('overview')}</p>
+          <h2 className="text-base sm:text-lg font-semibold">{t('statistics')}</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">{t('overview')}</p>
         </div>
         <Button 
           onClick={() => { fetchStats(); fetchTimelines(); }}

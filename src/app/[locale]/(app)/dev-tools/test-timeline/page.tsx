@@ -223,6 +223,7 @@ export default function TestTimelinePage() {
           onViewModeChange={setViewMode}
           showControls={true}
           onConfigClick={handleConfigClick}
+          onProjectClick={handleProjectClick}
         />
       </div>
       

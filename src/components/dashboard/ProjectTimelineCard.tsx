@@ -237,14 +237,14 @@ export function ProjectTimelineCard({
             {/* Right Section: Progress + Action Button */}
             <div className="flex items-center gap-4">
               {projectDates.isValid && (
-                <div className="text-center hidden sm:block">
-                  <div className="w-12 bg-secondary rounded-full h-2 mb-1">
+                <div className="text-center">
+                  <div className="w-8 sm:w-12 bg-secondary rounded-full h-2 mb-1">
                     <div 
                       className="bg-primary h-2 rounded-full transition-all duration-300"
                       style={{ width: `${projectDates.progress}%` }}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground">{projectDates.progress}%</p>
+                  <p className="text-xs text-muted-foreground hidden sm:block">{projectDates.progress}%</p>
                 </div>
               )}
               
@@ -359,31 +359,31 @@ export function ProjectTimelineCard({
         )}
         
         {/* Metadata Footer (ActionPlan Pattern) */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50 mt-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 text-xs text-muted-foreground pt-2 border-t border-border/50 mt-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             {milestoneStats.completed > 0 && (
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full" />
-                <span>{milestoneStats.completed} completed</span>
+                <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
+                <span className="whitespace-nowrap">{milestoneStats.completed} completed</span>
               </div>
             )}
             {milestoneStats.inProgress > 0 && (
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                <span>{milestoneStats.inProgress} in progress</span>
+                <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />
+                <span className="whitespace-nowrap">{milestoneStats.inProgress} in progress</span>
               </div>
             )}
             {milestoneStats.overdue > 0 && (
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-                <span>{milestoneStats.overdue} overdue</span>
+                <div className="w-2 h-2 bg-red-500 rounded-full shrink-0" />
+                <span className="whitespace-nowrap">{milestoneStats.overdue} overdue</span>
               </div>
             )}
           </div>
           
-          <div className="flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" />
-            <span>{milestoneStats.completionRate}% complete</span>
+          <div className="flex items-center gap-1 self-start sm:self-auto">
+            <TrendingUp className="h-3 w-3 shrink-0" />
+            <span className="whitespace-nowrap">{milestoneStats.completionRate}% complete</span>
           </div>
         </div>
       </CardContent>
