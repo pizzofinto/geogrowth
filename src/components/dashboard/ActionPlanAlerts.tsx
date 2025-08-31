@@ -57,11 +57,11 @@ export function ActionPlanAlerts({
   // ✅ Navigate to project dashboard for action plan details
   const handleViewDetails = useCallback((actionPlanId: number) => {
     // Find the action plan to get project information
-    const allActionPlans = [
+    const allActionPlans = data ? [
       ...data.overdue,
       ...data.dueSoon, 
       ...data.highPriority
-    ];
+    ] : [];
     
     const actionPlan = allActionPlans.find(ap => ap.id === actionPlanId);
     

@@ -353,7 +353,7 @@ export function ProjectTimelineCard({
             showLabels={viewMode === 'grid'}
             className={cn(
               "mt-4",
-              viewMode === 'list' && "mt-2"
+              (viewMode as string) === 'list' && "mt-2"
             )}
           />
         )}

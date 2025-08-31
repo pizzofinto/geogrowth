@@ -92,10 +92,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
       }
 
       // 2. Recupera profilo e ruoli in parallelo per maggiore efficienza
-      const [
-        { data: profile, error: profileError },
-        { data: roleData, error: roleError }
-      ] = await Promise.all([
+      const [profileResult, rolesResult] = await Promise.all([
         supabase
           .from('users')
           .select('preferred_language')
@@ -106,6 +103,9 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
           .select('user_roles(role_name)')
           .eq('user_id', signInData.user.id)
       ]);
+
+      const { data: profile, error: profileError } = profileResult;
+      const { data: roleData, error: roleError } = rolesResult;
 
       if (profileError) {
         console.warn('⚠️ Could not fetch user profile:', profileError.message);
@@ -120,9 +120,16 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
         preferredLanguage = profile.preferred_language;
       }
 
-      const roles = roleData
-        ?.map((item: { user_roles?: { role_name: string } }) => item.user_roles?.role_name)
-        .filter(Boolean) || [];
+      // Extract roles safely following the same pattern as AuthContext
+      const roles: string[] = [];
+      if (roleData && Array.isArray(roleData)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        roleData.forEach((item: any) => {
+          if (item?.user_roles?.role_name) {
+            roles.push(item.user_roles.role_name);
+          }
+        });
+      }
         
       let destination = '/dashboard'; // Destinazione di default
       if (roles.includes('Super User')) {

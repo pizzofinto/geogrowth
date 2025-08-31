@@ -51,22 +51,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (authUser) {
       try {
-        // 1. Recuperiamo il profilo dalla tabella 'users' (INCLUSA LA LINGUA!)
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('full_name, preferred_language') // ← AGGIUNTO preferred_language!
-          .eq('id', authUser.id)
-          .single();
+        // 1. Recuperiamo profilo e ruoli in parallelo per migliorare le performance
+        const [profileResult, rolesResult] = await Promise.all([
+          supabase
+            .from('users')
+            .select('full_name, preferred_language') // ← AGGIUNTO preferred_language!
+            .eq('id', authUser.id)
+            .single(),
+          supabase
+            .from('user_role_assignments')
+            .select('user_roles(role_name)')
+            .eq('user_id', authUser.id)
+        ]);
+
+        const { data: profile, error: profileError } = profileResult;
+        const { data: rolesData, error: rolesError } = rolesResult;
 
         if (profileError) {
           console.warn('Errore recupero profilo:', profileError);
         }
-
-        // 2. Recuperiamo i ruoli
-        const { data: rolesData, error: rolesError } = await supabase
-          .from('user_role_assignments')
-          .select('user_roles(role_name)')
-          .eq('user_id', authUser.id);
         
         if (rolesError) {
           console.error('Errore recupero ruoli:', rolesError);
@@ -75,7 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // 3. Mappiamo i ruoli in modo sicuro
         const userRoles: string[] = [];
         if (rolesData && Array.isArray(rolesData)) {
-          rolesData.forEach((item: { user_roles?: { role_name: string } }) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          rolesData.forEach((item: any) => {
             if (item?.user_roles?.role_name) {
               userRoles.push(item.user_roles.role_name);
             }
@@ -173,9 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isMounted = false;
       subscription?.unsubscribe();
     };
-  }, []); // Remove processAuthUser dependency to prevent loops
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // processAuthUser intentionally not included to prevent infinite loops
+  }, [processAuthUser]); // ✅ FIXED: Include stable processAuthUser in dependencies
 
   // ✅ FIXED: Memoize context value to prevent unnecessary re-renders
   const value = useMemo(() => ({

@@ -48,7 +48,7 @@ export default function ProjectSelectionPage() {
     if (!authLoading && user && hasRoles) {
       fetchProjects();
     }
-  }, [user?.id, authLoading, hasRoles, rolesString, t]);
+  }, [user, authLoading, hasRoles, rolesString, t]);
   // ✅ FIXED: Using stable references instead of direct roles dependency
 
   useEffect(() => {

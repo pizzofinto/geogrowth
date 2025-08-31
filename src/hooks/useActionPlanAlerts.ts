@@ -182,7 +182,8 @@ export function useActionPlanAlerts(
       // STEP 1: Prima ottieni i progetti a cui l'utente ha accesso
       let userProjectIds: number[] = [];
 
-      if (roles.includes('Super User')) {
+      const parsedRoles = JSON.parse(rolesString);
+      if (parsedRoles.includes('Super User')) {
         // Super User vede tutti i progetti
         const { data: allProjects, error: projectsError } = await supabase
           .from('projects')

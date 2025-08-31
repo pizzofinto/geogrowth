@@ -100,16 +100,14 @@ export function useRecentProjects(limit: number = 4): UseRecentProjectsReturn {
       console.error('❌ Error updating project access:', err);
       // Non bloccare l'UI per questo errore, continua con la navigazione
     }
-  }, [user?.id]); // Remove fetchRecentProjects dependency
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // fetchRecentProjects intentionally not included to prevent circular dependency
+  }, [user?.id, fetchRecentProjects]); // ✅ FIXED: Include stable fetchRecentProjects
 
   // Effect per il caricamento iniziale
   useEffect(() => {
     if (user?.id) {
       fetchRecentProjects();
     }
-  }, [user?.id, stableLimit]); // ✅ FIXED: Remove fetchRecentProjects from dependencies
+  }, [user?.id, stableLimit, fetchRecentProjects]); // ✅ FIXED: Include stable fetchRecentProjects
 
   return {
     projects,
