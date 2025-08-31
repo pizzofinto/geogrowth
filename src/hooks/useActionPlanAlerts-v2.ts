@@ -62,7 +62,6 @@ async function fetchActionPlanAlerts(
   config: Required<Omit<UseActionPlanAlertsOptions, 'enabled'>>
 ): Promise<ActionPlanAlertsData> {
   const parsedRoles = JSON.parse(rolesString);
-  const today = new Date().toISOString();
   
   // STEP 1: Get accessible project IDs based on user roles
   let userProjectIds: number[] = [];
@@ -79,7 +78,7 @@ async function fetchActionPlanAlerts(
   } else {
     // Regular users see only assigned projects
     const { data: assignedProjects, error: assignedError } = await supabase
-      .from('project_user_assignments')
+      .from('user_project_assignments')
       .select('project_id')
       .eq('user_id', userId);
         
@@ -143,48 +142,71 @@ async function fetchActionPlanAlerts(
     throw new Error('No action plans data received');
   }
 
-  // STEP 3: Process and categorize the data
-  const overdueDate = new Date(Date.now() - config.overdueMaxDays * 24 * 60 * 60 * 1000);
-  const dueSoonDate = new Date(Date.now() + config.dueSoonDays * 24 * 60 * 60 * 1000);
-  const highPriorityDate = new Date(Date.now() + config.highPriorityMaxDays * 24 * 60 * 60 * 1000);
+  // STEP 3: Process and categorize the data - using date strings like original
+  const today = new Date();
+  const dueSoonDate = new Date();
+  dueSoonDate.setDate(today.getDate() + config.dueSoonDays);
+  const overdueMinDate = new Date();
+  overdueMinDate.setDate(today.getDate() - config.overdueMaxDays);
+  const highPriorityMaxDate = new Date();
+  highPriorityMaxDate.setDate(today.getDate() + config.highPriorityMaxDays);
 
-  // Normalize the data structure
-  const normalizedPlans: ActionPlan[] = actionPlansData.map(plan => ({
-    ...plan,
-    component: Array.isArray(plan.parent_components) && plan.parent_components.length > 0
-      ? {
-          id: plan.parent_components[0].id,
-          component_name: plan.parent_components[0].drawings?.[0]?.component_description || 'Unknown Component',
-          project_id: plan.parent_components[0].project_id,
-          project: plan.parent_components[0].projects?.[0] || { id: 0, project_name: 'Unknown Project' }
-        }
-      : null,
-    action_type: Array.isArray(plan.action_types) && plan.action_types.length > 0
-      ? plan.action_types[0]
-      : null,
-    responsible_user: null // Would need to join with users table if needed
-  }));
+  const todayStr = today.toISOString().split('T')[0];
+  const dueSoonStr = dueSoonDate.toISOString().split('T')[0];
+  const overdueMinStr = overdueMinDate.toISOString().split('T')[0];
+  const highPriorityMaxStr = highPriorityMaxDate.toISOString().split('T')[0];
 
-  // Categorize plans
-  const overdue = normalizedPlans.filter(plan => {
-    const dueDate = new Date(plan.due_date);
-    return dueDate < new Date(today) && dueDate >= overdueDate;
+  // Normalize the data structure - match original implementation
+  const normalizedPlans: ActionPlan[] = actionPlansData.map(plan => {
+    // Try different ways to access the nested data - same as original
+    const parentComponent = Array.isArray(plan.parent_components) 
+      ? plan.parent_components[0] 
+      : plan.parent_components;
+    
+    const project = parentComponent?.projects 
+      ? (Array.isArray(parentComponent.projects) ? parentComponent.projects[0] : parentComponent.projects)
+      : null;
+      
+    const drawing = parentComponent?.drawings 
+      ? (Array.isArray(parentComponent.drawings) ? parentComponent.drawings[0] : parentComponent.drawings)
+      : null;
+      
+    const actionType = Array.isArray(plan.action_types) 
+      ? plan.action_types[0] 
+      : plan.action_types;
+
+    return {
+      ...plan,
+      component: parentComponent ? {
+        id: parentComponent.id,
+        component_name: drawing?.component_description || drawing?.item_code || 'Unknown Component',
+        project_id: parentComponent.project_id,
+        project: project || { id: 0, project_name: 'Unknown' }
+      } : null,
+      action_type: actionType || null,
+      responsible_user: null, // Don't load user data for performance
+    };
   });
 
-  const dueSoon = normalizedPlans.filter(plan => {
-    const dueDate = new Date(plan.due_date);
-    return dueDate >= new Date(today) && dueDate <= dueSoonDate;
-  });
+  // Categorize plans - using string comparison like original
+  const overdue = normalizedPlans.filter(plan => 
+    plan.due_date < todayStr && 
+    plan.due_date >= overdueMinStr && // Not older than X days
+    plan.action_plan_status !== 'Completed'
+  );
 
-  const highPriority = normalizedPlans.filter(plan => {
-    const dueDate = new Date(plan.due_date);
-    return (
-      plan.priority_level >= config.highPriorityThreshold &&
-      dueDate >= new Date(today) &&
-      dueDate <= highPriorityDate &&
-      !dueSoon.some(ds => ds.id === plan.id)
-    );
-  });
+  const dueSoon = normalizedPlans.filter(plan => 
+    plan.due_date >= todayStr && 
+    plan.due_date <= dueSoonStr && // Within X days
+    plan.action_plan_status !== 'Completed'
+  );
+
+  const highPriority = normalizedPlans.filter(plan => 
+    plan.priority_level <= config.highPriorityThreshold && 
+    plan.due_date <= highPriorityMaxStr && // Only if due within X days
+    plan.action_plan_status !== 'Completed' &&
+    !dueSoon.some(ds => ds.id === plan.id) // Don't duplicate with due soon
+  );
 
   return {
     overdue,
@@ -228,6 +250,7 @@ export function useActionPlanAlerts(options: UseActionPlanAlertsOptions = {}) {
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
+    refetchOnMount: true, // Ensure fresh data on component mount
     retry: 2,
   });
 

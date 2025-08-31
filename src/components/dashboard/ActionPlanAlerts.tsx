@@ -45,15 +45,15 @@ export function ActionPlanAlerts({
   const t = useTranslations('dashboard.actionPlans');
   const router = useRouter();
   
-  // ✅ PERFORMANCE: Lazy loading - only load data when component is visible
+  // Intersection observer for future optimizations (not blocking initial load)
   const { elementRef, isVisible } = useIntersectionObserver({ 
     threshold: 0.1, 
     triggerOnce: true 
   });
   
-  const { data, isLoading, error, refetch } = useActionPlanAlerts({ 
-    ...config, 
-    enabled: isVisible 
+  const { data, isLoading, error, refetch } = useActionPlanAlerts({
+    ...config,
+    enabled: true // Always enabled for dashboard critical component
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');

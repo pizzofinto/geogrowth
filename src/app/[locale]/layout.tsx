@@ -85,14 +85,14 @@ export default async function LocaleLayout({
   return (
     <html lang={locale}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <QueryProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <QueryProvider>
             <NextIntlClientProvider messages={messages} locale={locale}>
               {children}
             </NextIntlClientProvider>
             <Toaster />
-          </AuthProvider>
-        </QueryProvider>
+          </QueryProvider>
+        </AuthProvider>
       </body>
     </html>
   );
