@@ -2,16 +2,39 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Activity, AlertTriangle, Clock, TrendingUp, TrendingDown, Minus, CheckCircle, RefreshCw } from 'lucide-react';
-import { ProjectTimeline } from '@/components/dashboard/ProjectTimeline';
 import React from 'react';
-import RecentProjectsSection from '@/components/dashboard/RecentProjectsSection';
-import { ActionPlanAlerts } from '@/components/dashboard/ActionPlanAlerts';
 import { useTranslations } from 'next-intl';
+
+// Dynamic imports for heavy dashboard components
+const ProjectTimeline = dynamic(
+  () => import('@/components/dashboard/ProjectTimeline').then(mod => ({ default: mod.ProjectTimeline })),
+  { 
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false
+  }
+);
+
+const RecentProjectsSection = dynamic(
+  () => import('@/components/dashboard/RecentProjectsSection'),
+  { 
+    loading: () => <Skeleton className="h-64 w-full" />,
+    ssr: false
+  }
+);
+
+const ActionPlanAlerts = dynamic(
+  () => import('@/components/dashboard/ActionPlanAlerts').then(mod => ({ default: mod.ActionPlanAlerts })),
+  { 
+    loading: () => <Skeleton className="h-48 w-full" />,
+    ssr: false
+  }
+);
 
 // Tipi di dati aggiornati per includere 'Cancelled'
 type Milestone = {

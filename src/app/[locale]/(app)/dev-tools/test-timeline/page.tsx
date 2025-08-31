@@ -1,13 +1,25 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ProjectTimeline, ProjectWithTimeline } from '@/components/dashboard/ProjectTimeline';
-import { ProjectTimelineCard } from '@/components/dashboard/ProjectTimelineCard';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ProjectWithTimeline } from '@/components/dashboard/ProjectTimeline';
 import { RefreshCw, Calendar, TestTube } from 'lucide-react';
+
+// Dynamic imports for heavy components
+const ProjectTimeline = dynamic(
+  () => import('@/components/dashboard/ProjectTimeline').then(mod => ({ default: mod.ProjectTimeline })),
+  { loading: () => <Skeleton className="h-96 w-full" /> }
+);
+
+const ProjectTimelineCard = dynamic(
+  () => import('@/components/dashboard/ProjectTimelineCard').then(mod => ({ default: mod.ProjectTimelineCard })),
+  { loading: () => <Skeleton className="h-48 w-full" /> }
+);
 
 // Mock data for testing
 const createMockProjects = (): ProjectWithTimeline[] => [
