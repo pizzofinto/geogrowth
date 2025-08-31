@@ -698,6 +698,178 @@ describe('ComponentName', () => {
 
 ---
 
+## ⚡ Performance Guidelines
+
+> **Added**: 2025-08-31 after comprehensive performance optimization session
+> **Context**: Critical patterns discovered during login speed and bundle size optimization
+
+### 🚀 Database Query Optimization
+
+#### Parallel Queries (CRITICAL for Auth Performance)
+
+```typescript
+// ❌ Sequential queries - 400ms total
+const profile = await supabase
+  .from('users')
+  .select('preferred_language')
+  .eq('id', user.id)
+  .single();
+
+const roles = await supabase
+  .from('user_role_assignments') 
+  .select('user_roles(role_name)')
+  .eq('user_id', user.id);
+
+// ✅ Parallel queries - 200ms total
+const [profileResult, rolesResult] = await Promise.all([
+  supabase
+    .from('users')
+    .select('preferred_language')
+    .eq('id', user.id)
+    .single(),
+  supabase
+    .from('user_role_assignments')
+    .select('user_roles(role_name)')
+    .eq('user_id', user.id)
+]);
+
+const { data: profile } = profileResult;
+const { data: roles } = rolesResult;
+```
+
+**Rule**: Always use `Promise.all()` for independent database queries.
+
+---
+
+### 📦 Bundle Size Optimization
+
+#### Dynamic Imports for Heavy Components
+
+```typescript
+// ❌ Heavy components loaded upfront - 231kB bundle
+import { ProjectTimeline } from '@/components/dashboard/ProjectTimeline';
+import { ActionPlanAlerts } from '@/components/dashboard/ActionPlanAlerts';
+
+// ✅ Dynamic imports with loading states - 167kB bundle
+const ProjectTimeline = dynamic(
+  () => import('@/components/dashboard/ProjectTimeline').then(mod => ({ 
+    default: mod.ProjectTimeline 
+  })),
+  { 
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false
+  }
+);
+
+const ActionPlanAlerts = dynamic(
+  () => import('@/components/dashboard/ActionPlanAlerts').then(mod => ({ 
+    default: mod.ActionPlanAlerts 
+  })),
+  { 
+    loading: () => <Skeleton className="h-48 w-full" />,
+    ssr: false
+  }
+);
+```
+
+**Rule**: Use dynamic imports for components > 50kB or heavy data processing.
+
+---
+
+### 🔄 React Hook Dependencies (Infinite Loop Prevention)
+
+#### Complete Dependencies with Stable References
+
+```typescript
+// ❌ Missing dependencies cause infinite loops
+const fetchData = useCallback(async () => {
+  const response = await supabase.from('table').select('*');
+  processData(response.data);
+}, []); // ❌ Missing processData dependency
+
+useEffect(() => {
+  fetchData();
+}, [user?.id]); // ❌ Missing fetchData dependency
+
+// ✅ Stable references with complete dependencies
+const processData = useCallback((data) => {
+  // Processing logic
+}, []); // Stable - no external dependencies
+
+const fetchData = useCallback(async () => {
+  const response = await supabase.from('table').select('*');
+  processData(response.data);
+}, [processData]); // ✅ Include stable processData
+
+useEffect(() => {
+  if (user?.id) {
+    fetchData();
+  }
+}, [user?.id, fetchData]); // ✅ Include all dependencies
+```
+
+#### Stable Role References
+
+```typescript
+// ❌ Direct roles usage causes dependency issues
+const fetchActionPlans = useCallback(async () => {
+  if (roles.includes('Super User')) {
+    // Query logic
+  }
+}, [user?.id]); // ❌ Missing roles dependency
+
+// ✅ Stable roles reference
+const rolesString = useMemo(() => 
+  JSON.stringify(roles?.sort() || []), [roles]
+);
+
+const fetchActionPlans = useCallback(async () => {
+  const parsedRoles = JSON.parse(rolesString);
+  if (parsedRoles.includes('Super User')) {
+    // Query logic
+  }
+}, [user?.id, rolesString]); // ✅ Stable dependency
+```
+
+**Rule**: Always include ALL dependencies, use stable references to prevent infinite loops.
+
+---
+
+### 🎯 Performance Checklist
+
+Before committing components, verify:
+
+- [ ] **Database Queries**: Independent queries use `Promise.all()`
+- [ ] **Bundle Size**: Heavy components (>50kB) use dynamic imports
+- [ ] **Hook Dependencies**: All useEffect/useCallback include complete deps
+- [ ] **Loading States**: Dynamic components have skeleton placeholders
+- [ ] **Type Safety**: No `any` types, proper type guards used
+- [ ] **Build Success**: `npm run build` passes without errors
+
+### 📊 Performance Metrics to Monitor
+
+| Metric | Target | Critical Threshold |
+|--------|--------|-------------------|
+| Login Time | < 300ms | > 500ms |
+| Bundle Size (initial) | < 150kB | > 200kB |
+| React Re-renders | Minimal | Infinite loops |
+| Build Time | < 30s | > 60s |
+
+### 🛠️ Performance Tools
+
+```bash
+# Measure bundle sizes
+npm run build
+
+# Check for dependency issues
+npm run lint
+
+# Monitor dev performance
+# Use Chrome DevTools → Network/Performance tabs
+```
+
+---
+
 *Questo documento è vincolante per tutti gli sviluppatori del progetto GeoGrowth.*
-*Ultimo aggiornamento: [Data]*
-*Versione: 1.0.0*
+*Ultimo aggiornamento: 2025-08-31 (Performance Guidelines Added)*
+*Versione: 1.1.0*
