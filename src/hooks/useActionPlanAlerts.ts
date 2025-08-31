@@ -220,7 +220,7 @@ export function useActionPlanAlerts(
         return;
       }
 
-      // STEP 2: Cerca tutti gli action plans per i progetti accessibili
+      // STEP 2: Cerca gli action plans più critici per i progetti accessibili (OTTIMIZZATO con paginazione)
       const { data: actionPlansData, error: fetchError } = await supabase
         .from('action_plans')
         .select(`
@@ -252,7 +252,9 @@ export function useActionPlanAlerts(
         `)
         .in('action_plan_status', ['Open', 'In Progress'])
         .in('parent_components.project_id', userProjectIds)
-        .order('due_date', { ascending: true });
+        .order('due_date', { ascending: true })
+        .order('priority_level', { ascending: false }) // Priorità più alta per primi
+        .limit(50); // ✅ PERFORMANCE: Limitiamo ai 50 action plans più critici
 
       if (fetchError) {
         console.error('Supabase query error:', fetchError);

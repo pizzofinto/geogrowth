@@ -11,7 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useActionPlanAlerts } from '@/hooks/useActionPlanAlerts';
+import { useActionPlanAlerts } from '@/hooks/useActionPlanAlerts-v2';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { ActionPlanAlertCard } from './ActionPlanAlertCard';
 import { cn } from '@/lib/utils';
 
@@ -43,7 +44,17 @@ export function ActionPlanAlerts({
 }: ActionPlanAlertsProps) {
   const t = useTranslations('dashboard.actionPlans');
   const router = useRouter();
-  const { data, isLoading, error, refetch } = useActionPlanAlerts(config);
+  
+  // ✅ PERFORMANCE: Lazy loading - only load data when component is visible
+  const { elementRef, isVisible } = useIntersectionObserver({ 
+    threshold: 0.1, 
+    triggerOnce: true 
+  });
+  
+  const { data, isLoading, error, refetch } = useActionPlanAlerts({ 
+    ...config, 
+    enabled: isVisible 
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -186,7 +197,7 @@ export function ActionPlanAlerts({
   }
 
   return (
-    <Card className={className}>
+    <Card ref={elementRef} className={className}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-lg font-semibold">
           {t('title')}
