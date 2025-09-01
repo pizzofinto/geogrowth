@@ -220,7 +220,25 @@
     "previous": "Prec.",
     "next": "Succ.",
     "inDays": "tra {days} giorni",
-    "overdueByDays": "Scaduto da {days} giorni"
+    "overdueByDays": "Scaduto da {days} giorni",
+    "createProjectDescription": "Crea un nuovo progetto per organizzare e tracciare i tuoi componenti",
+    "projectDetails": "Dettagli Progetto",
+    "projectNamePlaceholder": "Inserisci nome progetto",
+    "projectCodePlaceholder": "Inserisci codice progetto (opzionale)",
+    "projectDescriptionPlaceholder": "Inserisci descrizione progetto (opzionale)",
+    "selectStartDate": "Seleziona data inizio",
+    "selectEndDate": "Seleziona data fine",
+    "projectStatus": "Stato Progetto",
+    "creating": "Creazione...",
+    "statusOptions": {
+      "active": "Attivo",
+      "archived": "Archiviato",
+      "closed": "Chiuso"
+    },
+    "validation": {
+      "nameRequired": "Il nome del progetto è obbligatorio",
+      "endDateAfterStart": "La data di fine deve essere successiva alla data di inizio"
+    }
   },
   "validation": {
     "required": "Campo obbligatorio",
@@ -236,7 +254,9 @@
     "unauthorized": "Non autorizzato",
     "forbidden": "Accesso negato",
     "serverError": "Errore del server",
-    "networkError": "Errore di rete"
+    "networkError": "Errore di rete",
+    "projectCreationFailed": "Creazione progetto fallita. Riprova.",
+    "insufficientPermissions": "Non hai i permessi per creare progetti."
   },
   "messages": {
     "errorLoadingData": "Errore nel caricamento dei dati",
@@ -261,6 +281,7 @@
   "profile": "Profilo",
   "projectSelection": "Selezione Progetto",
   "newProject": "Nuovo Progetto",
+  "create": "Crea",
   "editProject": "Modifica Progetto",
   "projectDetails": "Dettagli Progetto",
   "componentDetails": "Dettagli Componente",

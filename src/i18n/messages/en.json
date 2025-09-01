@@ -220,7 +220,25 @@
     "previous": "Prev.", 
     "next": "Next",
     "inDays": "in {days} days",
-    "overdueByDays": "Overdue by {days} days"
+    "overdueByDays": "Overdue by {days} days",
+    "createProjectDescription": "Create a new project to organize and track your components",
+    "projectDetails": "Project Details",
+    "projectNamePlaceholder": "Enter project name",
+    "projectCodePlaceholder": "Enter project code (optional)",
+    "projectDescriptionPlaceholder": "Enter project description (optional)",
+    "selectStartDate": "Select start date",
+    "selectEndDate": "Select end date",
+    "projectStatus": "Project Status",
+    "creating": "Creating...",
+    "statusOptions": {
+      "active": "Active",
+      "archived": "Archived", 
+      "closed": "Closed"
+    },
+    "validation": {
+      "nameRequired": "Project name is required",
+      "endDateAfterStart": "End date must be after start date"
+    }
   },
   "validation": {
     "required": "Required field",
@@ -236,7 +254,9 @@
     "unauthorized": "Unauthorized",
     "forbidden": "Access denied",
     "serverError": "Server error",
-    "networkError": "Network error"
+    "networkError": "Network error",
+    "projectCreationFailed": "Failed to create project. Please try again.",
+    "insufficientPermissions": "You don't have permission to create projects."
   },
   "messages": {
     "errorLoadingData": "Error loading data",
@@ -260,7 +280,8 @@
     "settings": "Settings",
     "profile": "Profile",
     "projectSelection": "Project Selection",
-    "newProject": "New Project",
+    "newProject": "New Project", 
+    "create": "Create",
     "editProject": "Edit Project",
     "projectDetails": "Project Details",
     "componentDetails": "Component Details",

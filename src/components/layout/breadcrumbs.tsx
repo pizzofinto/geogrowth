@@ -87,8 +87,14 @@ export function Breadcrumbs() {
           </BreadcrumbLink>
         </BreadcrumbItem>
         {cleanSegments.map((segment, index) => {
-          const href = `/${locale}/${cleanSegments.slice(0, index + 1).join('/')}`;
           const isLast = index === cleanSegments.length - 1;
+          
+          // Special handling for "projects" segment - redirect to project-selection
+          let href = `/${locale}/${cleanSegments.slice(0, index + 1).join('/')}`;
+          if (segment === 'projects' && !isLast) {
+            href = `/${locale}/project-selection`;
+          }
+          
           const label = getSegmentLabel(segment);
 
           return (
