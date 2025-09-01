@@ -140,7 +140,10 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
       const finalUrl = `/${preferredLanguage}${destination}`;
       console.log(`🚀 Redirecting to: ${finalUrl}`);
       
-      router.push(finalUrl);
+      // Add a small delay to ensure auth state is fully processed
+      setTimeout(() => {
+        router.push(finalUrl);
+      }, 100);
 
     } catch (error) {
       console.error('❌ An unexpected error occurred during login:', error);

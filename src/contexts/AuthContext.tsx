@@ -30,23 +30,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const processAuthUser = useCallback(async (authUser: User | null) => {
     // Prevent concurrent processing using ref instead of state
-    if (isProcessingRef.current) return;
+    if (isProcessingRef.current) {
+      console.log('🚫 Already processing auth, skipping...');
+      return;
+    }
     
     // ✅ FIXED: Get localStorage values locally to prevent instability
     const processKey = 'authContext_processing';
-    const currentlyProcessing = typeof window !== 'undefined' 
-      ? localStorage.getItem(processKey) 
-      : null;
+    let currentlyProcessing = null;
     
-    // Check if another tab is processing auth (within 10 seconds)
-    if (currentlyProcessing && Date.now() - parseInt(currentlyProcessing) < 10000) {
+    try {
+      currentlyProcessing = typeof window !== 'undefined' 
+        ? localStorage.getItem(processKey) 
+        : null;
+    } catch (error) {
+      console.warn('Error accessing localStorage:', error);
+    }
+    
+    // Check if another tab is processing auth (within 5 seconds - reduced timeout)
+    if (currentlyProcessing && Date.now() - parseInt(currentlyProcessing) < 5000) {
       console.log('🚫 Another tab is processing auth, skipping...');
       return;
     }
     
     isProcessingRef.current = true;
     if (typeof window !== 'undefined') {
-      localStorage.setItem(processKey, Date.now().toString());
+      try {
+        localStorage.setItem(processKey, Date.now().toString());
+      } catch (error) {
+        console.warn('Error setting localStorage:', error);
+      }
     }
     
     if (authUser) {
@@ -130,12 +143,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
     isProcessingRef.current = false;
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('authContext_processing');
+      try {
+        localStorage.removeItem('authContext_processing');
+      } catch (error) {
+        console.warn('Error removing localStorage item:', error);
+      }
     }
   }, []); // ✅ FIXED: Still empty deps but localStorage access is now stable
 
   useEffect(() => {
     let isMounted = true;
+    let isInitialLoad = true;
     
     // Get initial session first to avoid race condition
     const getInitialSession = async () => {
@@ -154,6 +172,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Error during initial session setup:', error);
         if (isMounted) setIsLoading(false);
+      } finally {
+        isInitialLoad = false;
       }
     };
 
@@ -165,6 +185,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔍 Auth state change:', event, !!session?.user);
+      
+      // Skip processing during initial load to prevent duplicate processing
+      if (isInitialLoad) {
+        console.log('⏳ Skipping auth state change during initial load');
+        return;
+      }
       
       const authUser = session?.user ?? null;
       // Only process if component is still mounted

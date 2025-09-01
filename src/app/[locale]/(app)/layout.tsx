@@ -7,8 +7,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { AuthProvider } from '@/contexts/AuthContext';
-
+import { AuthGuard } from '@/components/auth/AuthGuard';
 interface AppShellLayoutProps {
   children: React.ReactNode;
   params: Promise<{
@@ -22,7 +21,7 @@ export default async function AppShellLayout({
   // const { locale } = await params; // Unused for now
 
   return (
-    <AuthProvider>
+    <AuthGuard>
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
@@ -42,6 +41,6 @@ export default async function AppShellLayout({
           </div>
         </SidebarInset>
       </SidebarProvider>
-    </AuthProvider>
+    </AuthGuard>
   );
 }
