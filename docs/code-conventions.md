@@ -332,7 +332,86 @@ const processData = useCallback(async () => {
 }, [isProcessing])
 ```
 
-#### 5. Stabilize Context Values
+#### 5. Multi-Tab Safety (Critical for CRUD Operations)
+
+**RULE**: All CRUD operations (Create, Update, Delete) MUST prevent conflicts across browser tabs.
+
+```typescript
+// ✅ CORRECT - Multi-tab safe operation
+const createProject = useCallback(async () => {
+  // 1. Component-level protection
+  if (isProcessingRef.current) {
+    console.log('🚫 Already processing, skipping...');
+    return;
+  }
+
+  // 2. Cross-tab coordination using localStorage
+  const processKey = 'project_creation_processing';
+  let currentlyProcessing = null;
+  
+  try {
+    currentlyProcessing = typeof window !== 'undefined' 
+      ? localStorage.getItem(processKey) 
+      : null;
+  } catch (error) {
+    console.warn('Error accessing localStorage:', error);
+  }
+
+  // 3. Check if another tab is processing (within timeout window)
+  const PROCESS_TIMEOUT = 10000; // 10 seconds
+  if (currentlyProcessing && Date.now() - parseInt(currentlyProcessing) < PROCESS_TIMEOUT) {
+    console.log('🚫 Another tab is processing, skipping...');
+    return;
+  }
+
+  // 4. Set processing flags
+  isProcessingRef.current = true;
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(processKey, Date.now().toString());
+    } catch (error) {
+      console.warn('Error setting localStorage:', error);
+    }
+  }
+
+  try {
+    setIsSubmitting(true);
+    // ... CRUD operation logic
+  } catch (err) {
+    console.error('Operation failed:', err);
+  } finally {
+    // 5. Always cleanup flags
+    setIsSubmitting(false);
+    isProcessingRef.current = false;
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(processKey);
+      } catch (error) {
+        console.warn('Error removing localStorage item:', error);
+      }
+    }
+  }
+}, [formData, user?.id]);
+```
+
+**Multi-Tab Safety Checklist:**
+- [ ] Use `useRef` for component-level processing flag
+- [ ] Use localStorage with timestamp for cross-tab coordination
+- [ ] Set reasonable timeout window (5-15 seconds based on operation)
+- [ ] Always cleanup localStorage in finally block
+- [ ] Handle localStorage errors gracefully (private browsing)
+- [ ] Use descriptive process keys (e.g., `project_creation_processing`)
+
+**When to Apply:**
+- ✅ Project/Component creation/deletion
+- ✅ Bulk operations (import, export, batch updates)
+- ✅ Critical data modifications
+- ❌ Read operations (GET requests)
+- ❌ UI state changes (theme, language)
+
+**Key Pattern**: "Check component state → Check cross-tab state → Set both flags → Execute → Cleanup both flags"
+
+#### 6. Stabilize Context Values
 
 ```typescript
 const value = useMemo(() => ({
@@ -348,11 +427,12 @@ const value = useMemo(() => ({
 - [ ] useCallback includes all dependencies
 - [ ] Complex conditions are memoized
 - [ ] Async operations have race condition protection
+- [ ] **Multi-tab safety implemented for CRUD operations**
 - [ ] Context values are memoized
 - [ ] Effects have proper cleanup
 - [ ] No direct object/array comparisons in dependencies
 
-**Key mantra**: "Stable references, complete dependencies, prevent races"
+**Key mantra**: "Stable references, complete dependencies, prevent races, coordinate across tabs"
 
 ### Hook Template
 
@@ -842,6 +922,7 @@ Before committing components, verify:
 - [ ] **Database Queries**: Independent queries use `Promise.all()`
 - [ ] **Bundle Size**: Heavy components (>50kB) use dynamic imports
 - [ ] **Hook Dependencies**: All useEffect/useCallback include complete deps
+- [ ] **Multi-Tab Safety**: CRUD operations implement cross-tab coordination
 - [ ] **Loading States**: Dynamic components have skeleton placeholders
 - [ ] **Type Safety**: No `any` types, proper type guards used
 - [ ] **Build Success**: `npm run build` passes without errors

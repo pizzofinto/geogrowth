@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CalendarIcon, ArrowLeft, Save, Loader2, Plus, Trash2, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { enUS, it } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -53,9 +54,26 @@ const initialFormData: ProjectFormData = {
 export default function CreateProjectPage() {
   const { user, roles } = useAuth();
   const router = useRouter();
+  const locale = useLocale();
   const t = useTranslations('projects');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
+
+  // Map locale to date-fns locale for formatting
+  const dateLocale = useMemo(() => {
+    switch (locale) {
+      case 'it':
+        return it;
+      case 'en':
+      default:
+        return enUS;
+    }
+  }, [locale]);
+
+  // Helper function to format dates with correct locale
+  const formatDate = useCallback((date: Date, formatStr: string = 'PPP') => {
+    return format(date, formatStr, { locale: dateLocale });
+  }, [dateLocale]);
 
   // Form state
   const [formData, setFormData] = useState<ProjectFormData>(initialFormData);
@@ -406,13 +424,13 @@ export default function CreateProjectPage() {
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.project_start_date ? (
-                        format(formData.project_start_date, "PPP")
+                        formatDate(formData.project_start_date)
                       ) : (
                         <span>{t('selectStartDate')}</span>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto min-w-fit p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={formData.project_start_date}
@@ -439,13 +457,13 @@ export default function CreateProjectPage() {
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.project_end_date ? (
-                        format(formData.project_end_date, "PPP")
+                        formatDate(formData.project_end_date)
                       ) : (
                         <span>{t('selectEndDate')}</span>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto min-w-fit p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={formData.project_end_date}
@@ -489,7 +507,7 @@ export default function CreateProjectPage() {
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-2">
                   <Target className="h-4 w-4" />
-                  Project Milestones
+                  {t('milestones.title')}
                 </Label>
                 {availableMilestones.length > 0 && (
                   <Select
@@ -497,9 +515,10 @@ export default function CreateProjectPage() {
                     onValueChange={(value) => {
                       addMilestone(parseInt(value));
                     }}
+                    value=""
                   >
                     <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Add Milestone" />
+                      <SelectValue placeholder={t('milestones.selectMilestone')} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableMilestones.map((milestone) => (
@@ -539,7 +558,7 @@ export default function CreateProjectPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Target Date */}
                           <div className="space-y-2">
-                            <Label>Target Date</Label>
+                            <Label>{t('milestones.targetDate')}</Label>
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button
@@ -552,13 +571,13 @@ export default function CreateProjectPage() {
                                 >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
                                   {milestone.milestone_target_date ? (
-                                    format(milestone.milestone_target_date, "PPP")
+                                    formatDate(milestone.milestone_target_date)
                                   ) : (
-                                    <span>Select target date</span>
+                                    <span>{t('milestones.selectTargetDate')}</span>
                                   )}
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0">
+                              <PopoverContent className="w-auto min-w-fit p-0" align="start">
                                 <Calendar
                                   mode="single"
                                   selected={milestone.milestone_target_date}
@@ -574,7 +593,7 @@ export default function CreateProjectPage() {
 
                           {/* Status */}
                           <div className="space-y-2">
-                            <Label>Status</Label>
+                            <Label>{t('milestones.milestoneStatus')}</Label>
                             <Select
                               value={milestone.milestone_status}
                               onValueChange={(value: 'Planned' | 'In Progress' | 'Completed' | 'Cancelled') => 
@@ -586,10 +605,10 @@ export default function CreateProjectPage() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Planned">Planned</SelectItem>
-                                <SelectItem value="In Progress">In Progress</SelectItem>
-                                <SelectItem value="Completed">Completed</SelectItem>
-                                <SelectItem value="Cancelled">Cancelled</SelectItem>
+                                <SelectItem value="Planned">{t('milestones.statusOptions.planned')}</SelectItem>
+                                <SelectItem value="In Progress">{t('milestones.statusOptions.inProgress')}</SelectItem>
+                                <SelectItem value="Completed">{t('milestones.statusOptions.completed')}</SelectItem>
+                                <SelectItem value="Cancelled">{t('milestones.statusOptions.cancelled')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -603,7 +622,7 @@ export default function CreateProjectPage() {
               {formData.milestones.length === 0 && !loadingMilestones && (
                 <div className="text-center py-6 text-muted-foreground">
                   <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No milestones added yet. Add milestones to track project progress.</p>
+                  <p className="text-sm">{t('milestones.noMilestonesAdded')}</p>
                 </div>
               )}
             </div>

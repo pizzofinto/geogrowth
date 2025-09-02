@@ -238,6 +238,21 @@
     "validation": {
       "nameRequired": "Il nome del progetto è obbligatorio",
       "endDateAfterStart": "La data di fine deve essere successiva alla data di inizio"
+    },
+    "milestones": {
+      "title": "Milestone del Progetto",
+      "addMilestone": "Aggiungi Milestone",
+      "selectMilestone": "Seleziona milestone",
+      "noMilestonesAdded": "Nessuna milestone aggiunta ancora. Aggiungi milestone per tracciare il progresso del progetto.",
+      "targetDate": "Data Obiettivo",
+      "selectTargetDate": "Seleziona data obiettivo",
+      "milestoneStatus": "Stato",
+      "statusOptions": {
+        "planned": "Pianificato",
+        "inProgress": "In Corso",
+        "completed": "Completato", 
+        "cancelled": "Annullato"
+      }
     }
   },
   "validation": {

@@ -238,6 +238,21 @@
     "validation": {
       "nameRequired": "Project name is required",
       "endDateAfterStart": "End date must be after start date"
+    },
+    "milestones": {
+      "title": "Project Milestones",
+      "addMilestone": "Add Milestone",
+      "selectMilestone": "Select milestone",
+      "noMilestonesAdded": "No milestones added yet. Add milestones to track project progress.",
+      "targetDate": "Target Date",
+      "selectTargetDate": "Select target date",
+      "milestoneStatus": "Status",
+      "statusOptions": {
+        "planned": "Planned",
+        "inProgress": "In Progress", 
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      }
     }
   },
   "validation": {

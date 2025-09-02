@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronRight, Home, Package, Users, LineChart, type LucideIcon } from 'lucide-react';
+import { ChevronRight, Home, FolderOpen, Package, Users, LineChart, type LucideIcon } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   SidebarGroup,
@@ -34,6 +34,12 @@ const allNavItems: NavItem[] = [
     labelKey: 'dashboard',
     href: '/dashboard', 
     icon: Home, 
+    requiredRoles: ['Super User', 'Supplier Quality', 'Engineering', 'External User'] 
+  },
+  { 
+    labelKey: 'projects',
+    href: '/project-selection', 
+    icon: FolderOpen, 
     requiredRoles: ['Super User', 'Supplier Quality', 'Engineering', 'External User'] 
   },
   { 

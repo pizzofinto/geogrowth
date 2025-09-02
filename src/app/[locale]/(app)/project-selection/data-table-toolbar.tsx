@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PlusCircle, Trash2, FileUp, Settings2 } from 'lucide-react';
+import Link from 'next/link';
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -105,10 +106,12 @@ export function DataTableToolbar<TData>({
       
       {/* Pulsante a destra */}
       {canCreateProject && (
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {t('createNewProject')}
-        </Button>
+        <Link href="/projects/create">
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            {t('createNewProject')}
+          </Button>
+        </Link>
       )}
     </div>
   );
