@@ -8,7 +8,7 @@ import { DataTable } from './data-table';
 import { useTranslations } from 'next-intl';
 import { ProjectDeleteDialog, ProjectToDelete } from '@/components/project/ProjectDeleteDialog';
 import { useProjectDeletion } from '@/hooks/useProjectDeletion';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export default function ProjectSelectionPage() {
   const { user, roles, isLoading: authLoading } = useAuth();
@@ -23,9 +23,8 @@ export default function ProjectSelectionPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectsToDelete, setProjectsToDelete] = useState<ProjectToDelete[]>([]);
   
-  // Project deletion hook and toast
+  // Project deletion hook
   const { deleteProject, deleteProjects, isDeleting, error } = useProjectDeletion();
-  const { toast } = useToast();
 
   // Individual project deletion handler
   const handleDeleteProject = useCallback((project: Project) => {
@@ -59,10 +58,7 @@ export default function ProjectSelectionPage() {
       if (isBulk) {
         const result = await deleteProjects(projectIds);
         if (result.success) {
-          toast({
-            title: t('projectDeleted'),
-            description: t('projectsDeletedSuccessfully', { count: projectIds.length }),
-          });
+          toast.success(t('projectsDeletedSuccessfully', { count: projectIds.length }));
           // Refresh the project list
           if (user && hasRoles) {
             fetchProjects();
@@ -73,10 +69,7 @@ export default function ProjectSelectionPage() {
       } else {
         const success = await deleteProject(projectIds[0]);
         if (success) {
-          toast({
-            title: t('projectDeleted'),
-            description: t('projectDeletedSuccessfully'),
-          });
+          toast.success(t('projectDeletedSuccessfully'));
           // Refresh the project list
           if (user && hasRoles) {
             fetchProjects();
@@ -87,13 +80,9 @@ export default function ProjectSelectionPage() {
       }
     } catch (err) {
       console.error('Delete operation failed:', err);
-      toast({
-        title: t('error'),
-        description: error || t('deletionFailed'),
-        variant: "destructive",
-      });
+      toast.error(error || t('deletionFailed'));
     }
-  }, [deleteProject, deleteProjects, error, user, hasRoles, t, toast]);
+  }, [deleteProject, deleteProjects, error, user, hasRoles, t, fetchProjects]);
 
   // Genera le colonne con le traduzioni e callbacks
   const columns = React.useMemo(() => getColumns({

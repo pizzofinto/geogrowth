@@ -137,24 +137,9 @@ BEGIN
 END;
 $$;
 
--- Update get_recent_projects_for_user function to exclude deleted projects  
-CREATE OR REPLACE FUNCTION get_recent_projects_for_user(
-    user_id_param uuid, 
-    limit_param integer DEFAULT 4
-) 
-RETURNS TABLE(
-    project_id bigint, 
-    project_name text, 
-    project_status text, 
-    last_accessed timestamp with time zone, 
-    total_components integer, 
-    overdue_action_plans_count integer, 
-    otop_percentage numeric, 
-    ot_percentage numeric, 
-    ko_percentage numeric, 
-    next_milestone_name text, 
-    next_milestone_date date
-)
+-- Update get_recent_projects_for_user function to exclude deleted projects (matching existing signature)
+CREATE OR REPLACE FUNCTION public.get_recent_projects_for_user(user_id_param uuid, limit_param integer DEFAULT 4)
+RETURNS TABLE(project_id bigint, project_name text, project_status text, last_accessed timestamp with time zone, total_components integer, overdue_action_plans_count integer, otop_percentage numeric, ot_percentage numeric, ko_percentage numeric, next_milestone_name text, next_milestone_date date)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
@@ -163,10 +148,10 @@ BEGIN
   SELECT 
     pwd.id as project_id,
     pwd.project_name,
-    pwd.project_status,
+    pwd.project_status::text as project_status,  -- ← CAST enum to text to match return type
     upa.last_accessed,
-    pwd.total_components,
-    pwd.overdue_action_plans_count,
+    pwd.total_components::integer as total_components,  -- ← CAST bigint to integer to match return type  
+    pwd.overdue_action_plans_count::integer as overdue_action_plans_count,  -- ← CAST bigint to integer to match return type
     pwd.otop_percentage,
     pwd.ot_percentage,
     pwd.ko_percentage,
