@@ -93,21 +93,43 @@ export function useRecentProjects(limit: number = 4): UseRecentProjectsReturn {
         console.log('✅ Project access updated successfully');
         // Use setTimeout to avoid circular dependency and batch updates
         setTimeout(() => {
-          fetchRecentProjects();
+          if (!user?.id) return;
+          
+          setIsLoading(true);
+          setError(null);
+          
+          supabase
+            .rpc('get_recent_projects_for_user', {
+              user_id_param: user.id,
+              limit_param: stableLimit
+            })
+            .then(({ data, error: fetchError }) => {
+              if (fetchError) {
+                setError(`Database error: ${fetchError.message}`);
+              } else {
+                setProjects(data || []);
+              }
+              setIsLoading(false);
+            })
+            .catch((err) => {
+              const errorMessage = err instanceof Error ? err.message : 'Errore nel caricamento dei progetti recenti';
+              setError(errorMessage);
+              setIsLoading(false);
+            });
         }, 100);
       }
     } catch (err) {
       console.error('❌ Error updating project access:', err);
       // Non bloccare l'UI per questo errore, continua con la navigazione
     }
-  }, [user?.id, fetchRecentProjects]); // ✅ FIXED: Include stable fetchRecentProjects
+  }, [user?.id, stableLimit]); // ✅ FIXED: Remove fetchRecentProjects dependency
 
   // Effect per il caricamento iniziale
   useEffect(() => {
     if (user?.id) {
       fetchRecentProjects();
     }
-  }, [user?.id, stableLimit, fetchRecentProjects]); // ✅ FIXED: Include stable fetchRecentProjects
+  }, [user?.id, fetchRecentProjects]); // ✅ FIXED: Remove stableLimit to prevent extra re-renders
 
   return {
     projects,

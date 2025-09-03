@@ -69,12 +69,13 @@ export function useProjectDeletion(): UseProjectDeletionReturn {
 
       console.log('🗑️ Starting soft delete for project:', projectId);
 
-      // Perform soft delete - add deleted_at timestamp and deleted_by_user_id
+      // Perform soft delete - add deleted_at timestamp, deleted_by_user_id, and update status
       const { error: deleteError } = await supabase
         .from('projects')
         .update({
           deleted_at: new Date().toISOString(),
-          deleted_by_user_id: user.id
+          deleted_by_user_id: user.id,
+          project_status: 'Closed'
         })
         .eq('id', projectId)
         .is('deleted_at', null); // Only delete if not already deleted
@@ -155,7 +156,8 @@ export function useProjectDeletion(): UseProjectDeletionReturn {
         .from('projects')
         .update({
           deleted_at: new Date().toISOString(),
-          deleted_by_user_id: user.id
+          deleted_by_user_id: user.id,
+          project_status: 'Closed'
         })
         .in('id', projectIds)
         .is('deleted_at', null); // Only delete if not already deleted

@@ -101,13 +101,13 @@ export default function GlobalDashboardPage() {
       
       setStats(data);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : tMessages('errorLoadingData');
+      const errorMessage = err instanceof Error ? err.message : 'Error loading data';
       setError(prev => ({ ...prev, stats: errorMessage }));
       console.error('Error fetching dashboard stats:', err);
     } finally {
       setLoading(prev => ({ ...prev, stats: false }));
     }
-  }, [tMessages]);
+  }, []); // ✅ FIXED: Remove tMessages dependency
 
   // Funzione per fetch delle timeline
   const fetchTimelines = useCallback(async () => {
@@ -143,13 +143,13 @@ export default function GlobalDashboardPage() {
       
       setTimelines(validatedTimelines);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : tMessages('errorLoadingData');
+      const errorMessage = err instanceof Error ? err.message : 'Error loading data';
       setError(prev => ({ ...prev, timelines: errorMessage }));
       console.error('Error fetching timelines:', err);
     } finally {
       setLoading(prev => ({ ...prev, timelines: false }));
     }
-  }, [timelineLimit, tMessages]);
+  }, [timelineLimit]); // ✅ FIXED: Remove tMessages dependency
 
   // Effect per il caricamento iniziale
   useEffect(() => {

@@ -51,13 +51,6 @@ export default function ProjectSelectionPage() {
   }, []);
 
   // ✅ FIXED: Memoize roles to prevent infinite loops  
-  const rolesString = useMemo(() => {
-    try {
-      return JSON.stringify((roles || []).sort());
-    } catch {
-      return '[]';
-    }
-  }, [roles]);
   const hasRoles = useMemo(() => roles && roles.length > 0, [roles]);
 
   // Extract fetchProjects function so it can be reused
@@ -122,8 +115,8 @@ export default function ProjectSelectionPage() {
     if (!authLoading && user && hasRoles) {
       fetchProjects();
     }
-  }, [user, authLoading, hasRoles, rolesString, t, fetchProjects]);
-  // ✅ FIXED: Using stable references instead of direct roles dependency
+  }, [user, authLoading, hasRoles, fetchProjects, t]);
+  // ✅ FIXED: Removed rolesString to prevent infinite loops
 
   useEffect(() => {
     let projects = allProjects;

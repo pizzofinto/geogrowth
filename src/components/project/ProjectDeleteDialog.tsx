@@ -51,12 +51,17 @@ export function ProjectDeleteDialog({
   const handleConfirm = async () => {
     if (!isConfirmValid || isDeleting) return;
     
-    const projectIds = projects.map(p => p.id);
-    await onConfirm(projectIds);
-    
-    // Reset confirmation text and close dialog
-    setConfirmText('');
-    onOpenChange(false);
+    try {
+      const projectIds = projects.map(p => p.id);
+      await onConfirm(projectIds);
+      
+      // Reset confirmation text and close dialog only after successful completion
+      setConfirmText('');
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error during project deletion:', error);
+      // Don't close dialog on error, let user retry or cancel
+    }
   };
 
   const handleCancel = () => {
@@ -66,8 +71,8 @@ export function ProjectDeleteDialog({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="max-w-md">
-        <SheetHeader>
+      <SheetContent className="max-w-md p-6">
+        <SheetHeader className="pb-4">
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0">
               <AlertTriangle className="h-6 w-6 text-destructive" />
@@ -84,7 +89,7 @@ export function ProjectDeleteDialog({
         </SheetHeader>
         
         <SheetDescription asChild>
-          <div className="space-y-4">
+          <div className="space-y-4 py-2">
             {/* Warning message */}
             <div className="text-sm text-muted-foreground">
               {isBulkDelete 
@@ -132,12 +137,18 @@ export function ProjectDeleteDialog({
             {/* Confirmation input */}
             <div className="space-y-2">
               <div className="text-sm font-medium">
-                {t('typeToConfirm', { text: expectedConfirmText })}
+                {t('typeToConfirm').replace('{text}', expectedConfirmText)}
               </div>
               <input
                 type="text"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && isConfirmValid && !isDeleting) {
+                    e.preventDefault();
+                    handleConfirm();
+                  }
+                }}
                 placeholder={expectedConfirmText}
                 className="w-full px-3 py-2 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 disabled={isDeleting}
@@ -157,7 +168,11 @@ export function ProjectDeleteDialog({
           <Button 
             onClick={handleConfirm}
             disabled={!isConfirmValid || isDeleting}
-            className="bg-destructive hover:bg-destructive/90 focus:ring-destructive"
+            className={`transition-all duration-200 ${
+              isConfirmValid && !isDeleting 
+                ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' 
+                : 'bg-gray-100 text-gray-400 border-gray-300'
+            }`}
           >
             {isDeleting ? (
               <>
