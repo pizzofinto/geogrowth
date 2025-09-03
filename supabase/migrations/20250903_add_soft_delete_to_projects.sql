@@ -60,73 +60,80 @@ CREATE POLICY "Enable soft delete for project managers" ON projects
 -- UPDATE STORED PROCEDURES TO FILTER OUT SOFT DELETED PROJECTS
 -- ============================================================================
 
--- Update get_projects_with_details function to exclude deleted projects
-CREATE OR REPLACE FUNCTION get_projects_with_details()
-RETURNS TABLE (
-    id bigint,
-    project_name text,
-    project_code text,
-    project_status text,
-    project_start_date date,
-    project_end_date date,
-    project_manager_user_id uuid,
-    total_components integer,
-    overdue_action_plans_count integer,
-    otop_percentage numeric,
-    ot_percentage numeric,
-    ko_percentage numeric,
-    next_milestone_name text,
-    next_milestone_date date
-)
+-- Update get_projects_with_details function to exclude deleted projects (matching existing signature)
+CREATE OR REPLACE FUNCTION public.get_projects_with_details()
+RETURNS TABLE(id bigint, project_name text, project_code text, project_status project_status_enum, otop_percentage numeric, ot_percentage numeric, ko_percentage numeric, total_components bigint, overdue_action_plans_count bigint, next_milestone_name text, next_milestone_date date)
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path TO 'public'
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    WITH
+    -- CTE ottimizzata per calcolare tutte le statistiche dei componenti in un unico passaggio
+    component_stats AS (
+        SELECT
+            p.id AS project_id,
+            COUNT(pc.id) AS total,
+            COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'OTOP') AS otop,
+            COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'OT') AS ot,
+            COUNT(pc.id) FILTER (WHERE pc.calculated_parent_status = 'KO') AS ko
+        FROM projects p
+        LEFT JOIN parent_components pc ON p.id = pc.project_id
+        WHERE p.deleted_at IS NULL  -- ← ADDED: Exclude soft deleted projects
+          AND public.is_assigned_to_project(p.id)
+        GROUP BY p.id
+    ),
+    -- CTE per i piani d'azione scaduti
+    overdue_plans AS (
+        SELECT
+            pc.project_id,
+            COUNT(ap.id) as overdue_count
+        FROM action_plans ap
+        JOIN parent_components pc ON ap.parent_component_id = pc.id
+        JOIN projects p ON pc.project_id = p.id  -- ← ADDED: Join with projects
+        WHERE
+            ap.due_date < CURRENT_DATE
+            AND ap.action_plan_status NOT IN ('Completed', 'Verified', 'Cancelled')
+            AND p.deleted_at IS NULL  -- ← ADDED: Exclude soft deleted projects
+            AND public.is_assigned_to_project(pc.project_id)
+        GROUP BY pc.project_id
+    ),
+    -- CTE per la prossima milestone
+    next_milestones AS (
+        SELECT
+            pmi.project_id,
+            md.milestone_name,
+            pmi.milestone_target_date,
+            ROW_NUMBER() OVER(PARTITION BY pmi.project_id ORDER BY pmi.milestone_target_date ASC) as rn
+        FROM project_milestone_instances pmi
+        JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
+        JOIN projects p ON pmi.project_id = p.id  -- ← ADDED: Join with projects
+        WHERE pmi.milestone_status <> 'Completed'
+            AND pmi.milestone_target_date >= CURRENT_DATE
+            AND p.deleted_at IS NULL  -- ← ADDED: Exclude soft deleted projects
+            AND public.is_assigned_to_project(pmi.project_id)
+    )
+    -- Select finale che unisce i dati pre-calcolati
+    SELECT
         p.id,
         p.project_name,
         p.project_code,
         p.project_status,
-        p.project_start_date,
-        p.project_end_date,
-        p.project_manager_user_id,
-        COALESCE(stats.total_components, 0)::integer as total_components,
-        COALESCE(stats.overdue_action_plans_count, 0)::integer as overdue_action_plans_count,
-        COALESCE(stats.otop_percentage, 0)::numeric as otop_percentage,
-        COALESCE(stats.ot_percentage, 0)::numeric as ot_percentage,
-        COALESCE(stats.ko_percentage, 0)::numeric as ko_percentage,
-        next_milestone.milestone_name as next_milestone_name,
-        next_milestone.milestone_target_date as next_milestone_date
-    FROM projects p
-    LEFT JOIN (
-        -- Project statistics subquery
-        SELECT 
-            pc.project_id,
-            COUNT(pc.id) as total_components,
-            COUNT(CASE WHEN ap.due_date < CURRENT_DATE AND ap.status != 'Completed' THEN 1 END) as overdue_action_plans_count,
-            ROUND(AVG(CASE WHEN ce.evaluation_result = 'OTOP' THEN 100.0 ELSE 0.0 END), 1) as otop_percentage,
-            ROUND(AVG(CASE WHEN ce.evaluation_result = 'OT' THEN 100.0 ELSE 0.0 END), 1) as ot_percentage,
-            ROUND(AVG(CASE WHEN ce.evaluation_result = 'KO' THEN 100.0 ELSE 0.0 END), 1) as ko_percentage
-        FROM parent_components pc
-        LEFT JOIN cavity_evaluations ce ON pc.id = ce.parent_component_id
-        LEFT JOIN action_plans ap ON pc.id = ap.parent_component_id
-        GROUP BY pc.project_id
-    ) stats ON p.id = stats.project_id
-    LEFT JOIN (
-        -- Next milestone subquery
-        SELECT 
-            pmi.project_id,
-            md.milestone_name,
-            pmi.milestone_target_date,
-            ROW_NUMBER() OVER (PARTITION BY pmi.project_id ORDER BY pmi.milestone_target_date ASC) as rn
-        FROM project_milestone_instances pmi
-        JOIN milestone_definitions md ON pmi.milestone_definition_id = md.id
-        WHERE pmi.milestone_target_date >= CURRENT_DATE
-        AND pmi.milestone_status NOT IN ('Completed', 'Cancelled')
-    ) next_milestone ON p.id = next_milestone.project_id AND next_milestone.rn = 1
+        COALESCE((cs.otop * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS otop_percentage,
+        COALESCE((cs.ot * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS ot_percentage,
+        COALESCE((cs.ko * 100.0 / NULLIF(cs.total, 0)), 0)::NUMERIC(5, 2) AS ko_percentage,
+        COALESCE(cs.total, 0) AS total_components,
+        COALESCE(op.overdue_count, 0) AS overdue_action_plans_count,
+        nm.milestone_name AS next_milestone_name,
+        nm.milestone_target_date AS next_milestone_date
+    FROM
+        projects p
+    LEFT JOIN component_stats cs ON p.id = cs.project_id
+    LEFT JOIN overdue_plans op ON p.id = op.project_id
+    LEFT JOIN next_milestones nm ON p.id = nm.project_id AND nm.rn = 1
     WHERE p.deleted_at IS NULL  -- ← KEY FILTER: Exclude soft deleted projects
-    ORDER BY p.project_name;
+      AND public.is_assigned_to_project(p.id);
 END;
 $$;
 
