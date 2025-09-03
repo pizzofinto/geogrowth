@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, ArrowLeft, Save, Loader2, Plus, Trash2, Target } from 'lucide-react';
+import { CalendarIcon, ArrowLeft, Save, Loader2, Trash2, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { enUS, it } from 'date-fns/locale';
@@ -141,7 +141,7 @@ export default function CreateProjectPage() {
   }, [t]);
 
   // Handle form field changes
-  const handleFieldChange = useCallback((field: keyof ProjectFormData, value: any) => {
+  const handleFieldChange = useCallback((field: keyof ProjectFormData, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Clear error for this field
@@ -171,7 +171,7 @@ export default function CreateProjectPage() {
     }));
   }, []);
 
-  const updateMilestone = useCallback((index: number, field: keyof ProjectMilestone, value: any) => {
+  const updateMilestone = useCallback((index: number, field: keyof ProjectMilestone, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       milestones: prev.milestones.map((milestone, i) => 
@@ -313,7 +313,7 @@ export default function CreateProjectPage() {
         }
       }
     }
-  }, [formData, user?.id, validateForm, router, t, tErrors]);
+  }, [formData, user?.id, validateForm, router, tErrors]);
 
   // Handle form submission
   const handleSubmit = useCallback((e: React.FormEvent) => {
