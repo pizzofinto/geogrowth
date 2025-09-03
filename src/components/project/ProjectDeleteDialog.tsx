@@ -3,15 +3,13 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -67,25 +65,25 @@ export function ProjectDeleteDialog({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md">
-        <AlertDialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="max-w-md">
+        <SheetHeader>
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0">
               <AlertTriangle className="h-6 w-6 text-destructive" />
             </div>
             <div>
-              <AlertDialogTitle className="text-left">
+              <SheetTitle className="text-left">
                 {isBulkDelete 
                   ? t('confirmBulkDelete', { count: projects.length })
                   : t('confirmSingleDelete')
                 }
-              </AlertDialogTitle>
+              </SheetTitle>
             </div>
           </div>
-        </AlertDialogHeader>
+        </SheetHeader>
         
-        <AlertDialogDescription asChild>
+        <SheetDescription asChild>
           <div className="space-y-4">
             {/* Warning message */}
             <div className="text-sm text-muted-foreground">
@@ -146,16 +144,17 @@ export function ProjectDeleteDialog({
               />
             </div>
           </div>
-        </AlertDialogDescription>
+        </SheetDescription>
 
-        <AlertDialogFooter className="gap-2">
-          <AlertDialogCancel 
+        <SheetFooter className="gap-2 pt-4">
+          <Button 
+            variant="outline"
             onClick={handleCancel}
             disabled={isDeleting}
           >
             {t('cancel')}
-          </AlertDialogCancel>
-          <AlertDialogAction 
+          </Button>
+          <Button 
             onClick={handleConfirm}
             disabled={!isConfirmValid || isDeleting}
             className="bg-destructive hover:bg-destructive/90 focus:ring-destructive"
@@ -170,9 +169,9 @@ export function ProjectDeleteDialog({
                 {isBulkDelete ? t('deleteProjects') : t('deleteProject')}
               </>
             )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

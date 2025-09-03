@@ -50,6 +50,31 @@ export default function ProjectSelectionPage() {
     setDeleteDialogOpen(true);
   }, []);
 
+  // ✅ FIXED: Memoize roles to prevent infinite loops  
+  const rolesString = useMemo(() => {
+    try {
+      return JSON.stringify((roles || []).sort());
+    } catch {
+      return '[]';
+    }
+  }, [roles]);
+  const hasRoles = useMemo(() => roles && roles.length > 0, [roles]);
+
+  // Extract fetchProjects function so it can be reused
+  const fetchProjects = useCallback(async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    const { data, error } = await supabase.rpc('get_projects_with_details');
+
+    if (error) {
+      console.error('Error fetching project details:', error);
+    } else {
+      setAllProjects(data || []);
+    }
+    setLoading(false);
+  }, [user]);
+
   // Confirm deletion handler
   const handleConfirmDelete = useCallback(async (projectIds: number[]) => {
     const isBulk = projectIds.length > 1;
@@ -90,32 +115,6 @@ export default function ProjectSelectionPage() {
     roles: roles || [],
     onDeleteProject: handleDeleteProject
   }), [t, roles, handleDeleteProject]);
-
-  // ✅ FIXED: Memoize roles to prevent infinite loops  
-  // ✅ FIXED: Memoize roles to prevent infinite loops  
-  const rolesString = useMemo(() => {
-    try {
-      return JSON.stringify((roles || []).sort());
-    } catch {
-      return '[]';
-    }
-  }, [roles]);
-  const hasRoles = useMemo(() => roles && roles.length > 0, [roles]);
-
-  // Extract fetchProjects function so it can be reused
-  const fetchProjects = useCallback(async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    const { data, error } = await supabase.rpc('get_projects_with_details');
-
-    if (error) {
-      console.error('Error fetching project details:', error);
-    } else {
-      setAllProjects(data || []);
-    }
-    setLoading(false);
-  }, [user]);
 
   useEffect(() => {
     document.title = `${t('title')} | GeoGrowth`;
