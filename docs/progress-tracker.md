@@ -234,9 +234,22 @@ Localization:            0% → 100%     (IT/EN calendar + date formatting)
 
 ---
 
-## 📝 SPRINT 3 (Planned) - Component Management
+## 📝 SPRINT 3 (Planned) - Project Management CRUD + Component Management
 
-### Planned Features
+### 🔄 Project Management CRUD Completion
+- [ ] **Project Deletion** (Complete CRUD operations)
+  - [ ] Soft delete vs hard delete strategy decision
+  - [ ] Cascading delete handling (milestones, components, evaluations)
+  - [ ] Confirmation dialogs with safety measures
+  - [ ] Multi-tab safety implementation following code conventions
+  - [ ] Audit trail for deleted projects
+- [ ] **Project Editing/Updates** 
+  - [ ] Edit project details form
+  - [ ] Milestone management updates
+  - [ ] Validation and error handling
+  - [ ] Optimistic updates with rollback capability
+
+### 🧩 Component Management System  
 - [ ] Component List con DataTable
 - [ ] Component Detail View
 - [ ] Evaluation Form
@@ -245,9 +258,14 @@ Localization:            0% → 100%     (IT/EN calendar + date formatting)
 - [ ] Action Plans CRUD
 
 ### Rischi Identificati
-- Complessità calcolo stato padre
-- Performance con grandi dataset
-- Upload file size limits
+- **Project CRUD Completion:**
+  - Cascading delete complexity across related tables
+  - Data integrity during multi-user deletion scenarios
+  - Performance impact of soft delete queries
+- **Component Management:**
+  - Complessità calcolo stato padre
+  - Performance con grandi dataset
+  - Upload file size limits
 
 ---
 
