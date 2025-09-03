@@ -31,6 +31,7 @@ interface DataTableProps<TData, TValue> {
   setStatusFilter: (value: string) => void;
   searchTerm: string;
   setSearchTerm: (value: string) => void;
+  onBulkDelete?: (selectedRows: TData[]) => void;
   t: (key: string, values?: Record<string, string | number>) => string;
 }
 
@@ -42,6 +43,7 @@ export function DataTable<TData, TValue>({
   setStatusFilter,
   searchTerm,
   setSearchTerm,
+  onBulkDelete,
   t,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([
@@ -72,6 +74,7 @@ export function DataTable<TData, TValue>({
         setStatusFilter={setStatusFilter}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        onBulkDelete={onBulkDelete}
         t={t}
       />
       <div className="rounded-md border">

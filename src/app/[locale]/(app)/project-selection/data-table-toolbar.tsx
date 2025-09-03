@@ -28,6 +28,7 @@ interface DataTableToolbarProps<TData> {
   setStatusFilter: (value: string) => void;
   searchTerm: string;
   setSearchTerm: (value: string) => void;
+  onBulkDelete?: (selectedRows: TData[]) => void;
   t: (key: string, values?: Record<string, string | number>) => string;
 }
 
@@ -38,6 +39,7 @@ export function DataTableToolbar<TData>({
   setStatusFilter,
   searchTerm,
   setSearchTerm,
+  onBulkDelete,
   t,
 }: DataTableToolbarProps<TData>) {
   const numSelected = table.getFilteredSelectedRowModel().rows.length;
@@ -73,10 +75,17 @@ export function DataTableToolbar<TData>({
                 {t('exportSelected')}
               </DropdownMenuItem>
               {/* Mostra "Delete Selected" solo se l'utente ha i permessi */}
-              {canDeleteProject && (
+              {canDeleteProject && onBulkDelete && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive">
+                  <DropdownMenuItem 
+                    className="text-destructive"
+                    onClick={() => {
+                      const selectedRows = table.getFilteredSelectedRowModel().rows;
+                      const selectedData = selectedRows.map(row => row.original);
+                      onBulkDelete(selectedData);
+                    }}
+                  >
                     <Trash2 className="mr-2 h-4 w-4" />
                     {t('deleteSelected')}
                   </DropdownMenuItem>

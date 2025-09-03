@@ -3,8 +3,15 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowUpDown, FilePenLine } from 'lucide-react';
+import { ArrowUpDown, FilePenLine, Trash2, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { MaturityIndex, MaturityIndexData } from '@/components/shared/MaturityIndex';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -59,7 +66,13 @@ const formatTimeRemaining = (dateString: string | null, t: TranslationFunction):
     };
 };
 
-export const getColumns = (t: TranslationFunction): ColumnDef<Project>[] => [
+interface GetColumnsProps {
+  t: TranslationFunction;
+  roles: string[];
+  onDeleteProject: (project: Project) => void;
+}
+
+export const getColumns = ({ t, roles, onDeleteProject }: GetColumnsProps): ColumnDef<Project>[] => [
   // Colonna per la selezione multipla
   {
     id: 'select',
@@ -213,28 +226,49 @@ export const getColumns = (t: TranslationFunction): ColumnDef<Project>[] => [
       );
     },
   },
-  // Colonna: Edit (ex Actions)
+  // Colonna: Actions (Edit & Delete)
   {
     id: 'actions',
-    header: () => <div className="font-medium text-center">{t('projectEdit')}</div>,
+    header: () => <div className="font-medium text-center">{t('actions')}</div>,
     cell: ({ row }) => {
+      const project = row.original;
+      
+      // Permission checks
+      const canEdit = roles.includes('Super User') || roles.includes('Supplier Quality');
+      const canDelete = roles.includes('Super User') || roles.includes('Supplier Quality');
+      
       return (
         <div className="flex justify-center">
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Link href={`/projects/${row.original.id}/edit`}>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">{t('projectEdit')}</span>
-                                <FilePenLine className="h-4 w-4" />
-                            </Button>
-                        </Link>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>{t('projectEdit')}</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">{t('openMenu')}</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canEdit && (
+                <DropdownMenuItem asChild>
+                  <Link href={`/projects/${project.id}/edit`} className="flex items-center">
+                    <FilePenLine className="mr-2 h-4 w-4" />
+                    {t('projectEdit')}
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              
+              {canEdit && canDelete && <DropdownMenuSeparator />}
+              
+              {canDelete && (
+                <DropdownMenuItem 
+                  onClick={() => onDeleteProject(project)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {t('deleteProject')}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       );
     },
